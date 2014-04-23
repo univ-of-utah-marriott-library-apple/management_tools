@@ -28,7 +28,7 @@ class AppInfo:
             # Let's try and use it as a Bundle ID.
             self.path = subprocess.check_output(['mdfind', 'kMDItemCFBundleIdentifier', '=', self.app]).strip()
             if not self.path:
-                raise ValueError("Invalid bundle identifier.")
+                raise ValueError("Invalid bundle identifier.  No path found.")
         else:
             # They probably tried to supply just a simple name for the self.application.  Silly user!
             # We shall try to accommodate...
@@ -42,6 +42,8 @@ class AppInfo:
                     if os.path.isdir(self.path):
                         break
 
+        if not self.path:
+            raise ValueError("Invalid bundle identifier.  No path found.")
         # Since we now have the path, get the rest of the info!
         if os.path.exists(self.path + '/Contents/Info.plist'):
             self.plist = PlistEditor(self.path + '/Contents/Info.plist')
