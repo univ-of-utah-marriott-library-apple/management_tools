@@ -12,7 +12,8 @@ setup(
     packages=['helpful_tools'],
     package_dir={'helpful_tools': 'src/helpful_tools'},
     scripts=['scripts/app_lookup.py',
-             'scripts/management_logger.py'],
+             'scripts/management_logger.py',
+             'scripts/executable_bundler.py'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'Environment :: Console',
