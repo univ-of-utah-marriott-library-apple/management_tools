@@ -16,6 +16,17 @@ except ImportError, e:
     print "  $ location_services_manager -n ..."
     sys.exit(3)
 
+class ChDir:
+    def __init__(self, newPath):
+        self.savedPath = os.getcwd()
+        os.chdir(newPath)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        os.chdir(self.savedPath)
+
 def set_globals ():
     '''Global options are set here.
     '''
@@ -49,11 +60,11 @@ def setup_logger ():
 def parse_options ():
     parser = argparse.ArgumentParser(description="Bundles groups of Python files together into a single executable.")
 
-    parser.add_argument('-i', '--input', default='', help="The input DIRECTORY containing the files to be bundled.")
-    parser.add_argument('-o', '--output', default='', help="The output FILE name to use.")
-    parser.add_argument('-l', '--log', help="Set a manual logging location.")
-    parser.add_argument('-n', '--no-log', action='store_true', help="Don't write logs to file.")
     parser.add_argument('-v', '--version', action='version', version=options['long_name'] + ' ' + options['version'], help="Display version information.")
+    parser.add_argument('-n', '--no-log', action='store_true', help="Don't write logs to file.")
+    parser.add_argument('-l', '--log', help="Set a manual logging directory to LOG.")
+    parser.add_argument('-i', '--input', default='', help="The input DIRECTORY containing the files to be bundled.")
+    parser.add_argument('-o', '--output', default='', help="The output FILE name to use for the executable.")
     args = parser.parse_args()
 
     options['input'] = args.input
@@ -77,6 +88,9 @@ def main ():
     options['input'] = os.path.abspath(options['input'])
     if not options['input'].endswith('/'):
         options['input'] += '/'
+    if not os.path.isfile(options['input'] + '__main__.py'):
+        logger.error("You must have a '__main__.py' file in the input directory.")
+        sys.exit(5)
 
     # Proper formatting for the output.
     if not options['output']:
@@ -84,19 +98,36 @@ def main ():
     else:
         options['output'] = os.path.abspath(os.path.expanduser(options['output']))
         if not os.path.isdir(os.path.dirname(options['output'])):
-            logger.error("You must specify a filename with a valid path.")
+            logger.error("You must specify a filename with a valid pre-existing path.")
             sys.exit(5)
     if not os.access(os.path.dirname(options['output']), os.W_OK):
         logger.error("You do not have permission to save to: " + options['output'])
-        sys.exit(7)
-
-    if not os.path.isfile(options['input'] + '__main__.py'):
-        logger.error("You must have a '__main__.py' file in the input directory.")
-        sys.exit(7)
+        sys.exit(5)
 
     logger.info("Bundling Python files in '" + options['input'] + "' to '" + options['output'] + "'")
 
+    # Create the .zip file.
+    # The 'zip' command will make everything relative, so we've gotta cd there.
+    with ChDir(options['input']) as c:
+        files = [f for f in os.listdir('.') if os.path.isfile(f) and f.endswith('.py')]
+        try:
+            subprocess.call(['zip', options['output'] + '.zip'] + files)
+        except:
+            logger.error("There was an issue with zipping.")
+            sys.exit(10)
 
+    # Create the bundled file.
+    with open(options['output'], 'w') as outfile:
+        echo = subprocess.Popen(['echo', r'#!/usr/bin/env python'], stdout=subprocess.PIPE)
+        subprocess.call(['cat', '-', options['output'] + '.zip'], stdin=echo.stdout, stdout=outfile)
+
+    logger.info("Cleaning up...")
+
+    # Make it executable and delete the .zip.
+    os.chmod(options['output'], 0755)
+    os.remove(options['output'] + '.zip')
+
+    logger.info("Done!  Bundled executable at '" + options['output'] + "'")
 
 if __name__ == "__main__":
     main()
