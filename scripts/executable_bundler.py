@@ -50,7 +50,10 @@ def setup_logger ():
     if options['log']:
         # A logger!
         if not options['log_dest']:
-            logger = loggers.file_logger(options['name'])
+            if os.access('/var/log', os.W_OK):
+                logger = loggers.file_logger(options['name'])
+            else:
+                logger = loggers.file_logger(options['name'], path=os.path.expanduser('~/.logs'))
         else:
             logger = loggers.file_logger(options['name'], path=options['log_dest'])
     else:
