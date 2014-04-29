@@ -12,8 +12,7 @@ except ImportError, e:
     print "You need the 'Helpful Tools' module to be installed first."
     print "https://github.com/univ-of-utah-marriott-library-apple/helpful_tools"
     print
-    print "You can use the '-n' switch to ignore this:"
-    print "  $ location_services_manager -n ..."
+    print "You can use the '-n' switch to ignore this."
     sys.exit(3)
 
 class ChDir:
@@ -35,7 +34,7 @@ def set_globals ():
     options = {}
     options['long_name'] = 'Python Executable Bundler'
     options['name'] = '_'.join(options['long_name'].lower().split())
-    options['version'] = '1.0'
+    options['version'] = '1.1'
 
 def setup_logger ():
     '''Creates the logger to be used throughout.
