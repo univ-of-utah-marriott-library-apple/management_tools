@@ -21,6 +21,12 @@ class PlistEditor:
         self.path = str(path)
         self.list = str(path[:-6])
 
+    def __repr__(self):
+        '''Returns a nicely formatted string.
+        '''
+
+        return str(self.path)
+
     def read(self, key=None):
         '''Returns either the entire plist (if key is left blank) or the
         specified key's value as a string.

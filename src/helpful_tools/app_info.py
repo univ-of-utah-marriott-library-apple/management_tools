@@ -11,29 +11,41 @@ class AppInfo:
         3. A short name ('Safari')
 
     After this, the name, path, bid, and plist are easily accessible.
+
+    Accessible parts are:
+        path  - the path to the .app bundle
+        plist - the plist at [path]/Contents/Info.plist
+        bid   - the bundle identifier of the application in the plist
+                given by CFBundleIdentifier
+        name  - the name of the application in the plist given by
+                CFBundleName
     '''
 
     def __init__ (self, app):
 
-        self.app = app
+        self.path = None
+        self.plist = None
+        self.bid = None
+        self.name = None
 
         # First, find the path of the app.
-        if os.path.isdir(self.app):
+        if os.path.isdir(app):
             # Clearly it's a path.
-            if self.app.endswith('/'):
-                self.path = self.app[:-1]
+            if app.endswith('/'):
+                self.path = app[:-1]
             else:
-                self.path = self.app
-        elif '.' in self.app and self.app.find('.self.app', len(self.app) - 4) < 0:
+                self.path = app
+        elif '.' in app and app.find('.app', len(app) - 4) < 0:
             # Let's try and use it as a Bundle ID.
-            self.path = subprocess.check_output(['mdfind', 'kMDItemCFBundleIdentifier', '=', self.app]).strip()
+            self.path = subprocess.check_output(['mdfind', 'kMDItemCFBundleIdentifier', '=', app]).strip()
             if not self.path:
                 raise ValueError("Invalid bundle identifier.  No path found.")
         else:
-            # They probably tried to supply just a simple name for the self.application.  Silly user!
+            # They probably tried to supply just a simple name for the application.  Silly user!
             # We shall try to accommodate...
-            self.app = self.app.replace('.app', '')
-            p = re.compile('.*' + self.app + '.*', re.IGNORECASE)
+            app = app.replace('.app', '')
+            p = re.compile('.*' + app + '.*', re.IGNORECASE)
+            # We use 'mdfind' (aka Spotlight) to find all applications and search through their names.
             apps = subprocess.check_output(['mdfind', '-onlyin', '/Applications', 'kMDItemKind==Application']).split('\n')
             for item in apps:
                 result = p.search(item)
@@ -42,13 +54,21 @@ class AppInfo:
                     if os.path.isdir(self.path):
                         break
 
+        # If the path hasn't been found by now, something didn't go very well.
         if not self.path:
-            raise ValueError("Invalid bundle identifier.  No path found.")
+            raise ValueError("Invalid application: no path found.")
+
         # Since we now have the path, get the rest of the info!
         if os.path.exists(self.path + '/Contents/Info.plist'):
             self.plist = PlistEditor(self.path + '/Contents/Info.plist')
             self.bid = self.plist.read('CFBundleIdentifier')
             self.name = self.plist.read('CFBundleName')
+        else:
+            raise ValueError("Invalid application: no valid Info.plist found.")
 
     def __repr__ (self):
-        return self.name + "\n\tBID:  " + self.bid + "\n\tPath: " + self.path
+        result = str(self.name)
+        result += "\n\tBID:        " + str(self.bid)
+        result += "\n\tPath:       " + str(self.path)
+        result += "\n\tInfo.plist: " + str(self.plist)
+        return result

@@ -9,7 +9,7 @@ def main (args):
         try:
             info = AppInfo(item)
         except ValueError, e:
-            info = "Invalid identifier: '" + item + "'"
+            info = "Invalid application: '" + item + "'"
         print info
 
 if __name__ == "__main__":
