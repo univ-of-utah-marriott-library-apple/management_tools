@@ -2,7 +2,7 @@
 
 import sys
 
-from helpful_tools.app_info import AppInfo
+from management_tools.app_info import AppInfo
 
 def main (args):
     for item in args[1:]:
