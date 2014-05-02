@@ -5,15 +5,7 @@ import os
 import subprocess
 import sys
 
-# Check that the logging imports properly.
-try:
-    from helpful_tools import loggers
-except ImportError, e:
-    print "You need the 'Helpful Tools' module to be installed first."
-    print "https://github.com/univ-of-utah-marriott-library-apple/helpful_tools"
-    print
-    print "You can use the '-n' switch to ignore this."
-    sys.exit(3)
+from management_tools import loggers
 
 class ChDir:
     def __init__(self, newPath):
@@ -34,7 +26,7 @@ def set_globals ():
     options = {}
     options['long_name'] = 'Python Executable Bundler'
     options['name'] = '_'.join(options['long_name'].lower().split())
-    options['version'] = '1.1'
+    options['version'] = '1.2'
 
 def setup_logger ():
     '''Creates the logger to be used throughout.
@@ -47,13 +39,12 @@ def setup_logger ():
 
     global logger
     if options['log']:
-        # A logger!
+        # Write the logs to files.
         if not options['log_dest']:
-            if os.access('/var/log', os.W_OK):
-                logger = loggers.file_logger(options['name'])
-            else:
-                logger = loggers.file_logger(options['name'], path=os.path.expanduser('~/.logs'))
+            # If no destination is explicitly given, use the defaults.
+            logger = loggers.file_logger(options['name'])
         else:
+            # Otherwise, use the specified value.
             logger = loggers.file_logger(options['name'], path=options['log_dest'])
     else:
         # A dummy logger.  It won't record anything to file.
