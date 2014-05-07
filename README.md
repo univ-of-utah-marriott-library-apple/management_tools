@@ -6,13 +6,13 @@ A collection of Python scripts and packages to simplify OS X management.
 ## Contents
 
 * [Modules](#modules)
-  * [app_info](#app-info)
-  * [loggers](#loggers)
-  * [plist_editor](#plist-editor)
+  * [app_info](#app-info) - access applications' information
+  * [loggers](#loggers) - output data to logs
+  * [plist_editor](#plist-editor) - modify plists properly
 * [Scripts](#scripts)
-  * [App Lookup](#app-lookup)
-  * [Python Executable Bundler](#python-executable-bundler)
-  * [Management Logger](#management-logger)
+  * [App Lookup](#app-lookup) - lookup an application's information
+  * [Python Executable Bundler](#python-executable-bundler) - bundle a Python project into a standalone script
+  * [Management Logger](#management-logger) - log data easily
 
 ## Modules
 
@@ -109,7 +109,9 @@ If we then go and look in (assuming this was run unprivileged) `~/Library/Logs/M
 
 #### stream_logger
 
-Coming soon.
+`stream_logger` is a console-only logger.  This is useful if you want to output log-formatted information to the command line at runtime.
+
+In my scripts, I usually provide an option to not output to a log.  If this is specified, then a `stream_logger` is used instead.  That way the information still gets out, but isn't written to disk.
 
 ### plist_editor
 
@@ -169,4 +171,10 @@ $ python __main__.py
 
 ### Management Logger
 
-Coming soon.
+The Management Logger is an interface for the `file_logger` from above.  Calling Management Logger allows you to easily write a log entry to a file quickly and efficiently.  Calling the script involves:
+
+```
+$ management_logger.py file "This is an entry in my log."
+```
+
+This will log the line `"This is an entry in my log."` to a file named `file.log` located in one of two places: either `/var/log/management/` if the calling user has root privileges, or else `~/Library/Logs/Management/`.
