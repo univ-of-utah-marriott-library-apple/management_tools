@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='Management Tools',
-    version='1.2',
+    version='1.2.1',
     url='https://github.com/univ-of-utah-marriott-library-apple/management_tools',
     author='Pierce Darragh, Marriott Library IT Services',
     author_email='mlib-its-mac-github@lists.utah.edu',
