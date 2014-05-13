@@ -17,7 +17,7 @@ def file_logger (name=None, level=logging.INFO, path=None):
     # Get the path.
     if not path:
         # If no path is specified, provide the default.
-        if os.access(os.path.dirname(ELEVATED_PATH), os.W_OK):
+        if os.access(os.path.dirname(ELEVATED_PATH[:-1]), os.W_OK):
             path = ELEVATED_PATH
         else:
             path = os.path.expanduser(LOCAL_PATH)
