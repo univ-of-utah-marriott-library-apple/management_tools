@@ -27,6 +27,7 @@ class AppInfo:
         self.plist = None
         self.bid = None
         self.name = None
+        self.executable = None
 
         # First, find the path of the app.
         if os.path.isdir(app):
@@ -63,6 +64,7 @@ class AppInfo:
             self.plist = PlistEditor(self.path + '/Contents/Info.plist')
             self.bid = self.plist.read('CFBundleIdentifier')
             self.name = self.plist.read('CFBundleName')
+            self.executable = self.path + '/Contents/MacOS/' + self.plist.read('CFBundleExecutable')
             if not self.name:
                 self.name = self.bid.split('.')[-1].title()
         else:
@@ -73,4 +75,5 @@ class AppInfo:
         result += "\n\tBID:        " + str(self.bid)
         result += "\n\tPath:       " + str(self.path)
         result += "\n\tInfo.plist: " + str(self.plist)
+        result += "\n\tExecutable: " + str(self.executable)
         return result
