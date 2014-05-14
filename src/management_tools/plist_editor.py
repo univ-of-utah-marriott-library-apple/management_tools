@@ -36,12 +36,12 @@ class PlistEditor:
         result = ''
         if not key:
             try:
-                result = subprocess.check_output(['defaults', 'read', self.list])
+                result = subprocess.check_output(['defaults', 'read', self.list], stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 return ''
         else:
             try:
-                result = subprocess.check_output(['defaults', 'read', self.list, str(key)])
+                result = subprocess.check_output(['defaults', 'read', self.list, str(key)], stderr=subprocess.STDOUT)
             except subprocess.CalledProcessError:
                 return ''
         if result.endswith('\n'):

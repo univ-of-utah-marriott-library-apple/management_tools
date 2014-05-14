@@ -63,6 +63,8 @@ class AppInfo:
             self.plist = PlistEditor(self.path + '/Contents/Info.plist')
             self.bid = self.plist.read('CFBundleIdentifier')
             self.name = self.plist.read('CFBundleName')
+            if not self.name:
+                self.name = self.bid.split('.')[-1].title()
         else:
             raise ValueError("Invalid application: no valid Info.plist found.")
 
