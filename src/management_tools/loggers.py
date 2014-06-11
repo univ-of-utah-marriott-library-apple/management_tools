@@ -42,7 +42,7 @@ def file_logger (name=None, level=logging.INFO, path=None):
     logger = logging.getLogger(name)
     logger.setLevel(level)
     formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-    handler = logging.handlers.RotatingFileHandler(destination, maxBytes=102400, backupCount=5)
+    handler = logging.handlers.RotatingFileHandler(destination, maxBytes=10485760, backupCount=5)
     handler.setFormatter(formatter)
     logger.addHandler(handler)
 
