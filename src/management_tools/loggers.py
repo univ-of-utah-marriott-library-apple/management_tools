@@ -26,17 +26,21 @@ def file_logger (name=None, level=logging.INFO, path=None):
         if not path.endswith('/'):
             path += '/'
 
-    # If the path doesn't exist, attempt to create the directory structure.
-    if not os.path.exists(path):
-        try:
-            os.makedirs(path)
-        except OSError:
-            raise ValueError("Invalid path specified: could not create '" + str(path) + "'")
-
     # If no name was specified, use the name of the module that called this.
     if not name:
         name = inspect.stack()[1][3]
-    destination = path + name + '.log'
+
+    # Join the path to the name and make sure it ends with '.log'.
+    destination = os.path.join(path, name)
+    if not destination.endswith('.log'):
+        destination += '.log'
+
+    # If the path doesn't exist, attempt to create the directory structure.
+    if not os.path.exists(os.path.dirname(destination)):
+        try:
+            os.makedirs(os.path.dirname(destination))
+        except OSError:
+            raise ValueError("Invalid path specified: could not create '" + str(os.path.dirname(destination)) + "'")
 
     # Set up the formatters and handlers for the logger.
     logger = logging.getLogger(name)
