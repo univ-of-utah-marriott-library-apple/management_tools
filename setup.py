@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='Management Tools',
-    version='1.3.2',
+    version='1.4.0',
     url='https://github.com/univ-of-utah-marriott-library-apple/management_tools',
     author='Pierce Darragh, Marriott Library IT Services',
     author_email='mlib-its-mac-github@lists.utah.edu',
@@ -13,7 +13,8 @@ setup(
     package_dir={'management_tools': 'src/management_tools'},
     scripts=['scripts/app_lookup.py',
              'scripts/management_logger.py',
-             'scripts/executable_bundler.py'],
+             'scripts/executable_bundler.py',
+             'scripts/management_email.py'],
     classifiers=[
         'Development Status :: 5 - Stable',
         'Environment :: Console',

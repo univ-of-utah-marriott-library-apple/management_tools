@@ -13,10 +13,11 @@ A collection of Python scripts and packages to simplify OS X management.
   * [App Lookup](#app-lookup) - lookup an application's information
   * [Python Executable Bundler](#python-executable-bundler) - bundle a Python project into a standalone script
   * [Management Logger](#management-logger) - log data easily
+  * [Management Email](#management-email) - simple email sender
 
 ## Modules
 
-In Python, modules are designed to be imported into another project to make your life easier.  These can be integrated into your packages by simply using:
+In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
 
 ```python
 from package import module
@@ -33,13 +34,13 @@ from management_tools.app_info import AppInfo
 
 ### app_info
 
-This module contains a class, `AppInfo`, which can be used to get information about applications.  Generally, you will do:
+This module contains a class, `AppInfo`, which can be used to get information about applications. Generally, you will do:
 
 ```python
 from management_tools.app_info import AppInfo
 ```
 
-Then the class can be used to get information.  It requires an argument upon creation which should tell it something identifiable about the application, such as a valid short name, a bundle path, or a bundle identifier.  Once it has been created, you can access various useful bits about the application.
+Then the class can be used to get information. It requires an argument upon creation which should tell it something identifiable about the application, such as a valid short name, a bundle path, or a bundle identifier. Once it has been created, you can access various useful bits about the application.
 
 ```python
 app = AppInfo('application name')
@@ -80,13 +81,13 @@ Safari
 
 ### loggers
 
-In our deployment, we like to log stuff.  Logging things is a useful way to record information for later perusal, which can be quite helpful.  Since I kept having to copy/paste our logging mechanisms from script to script, I just created a dedicated logging module.
+In our deployment, we like to log stuff. Logging things is a useful way to record information for later perusal, which can be quite helpful. Since I kept having to copy/paste our logging mechanisms from script to script, I just created a dedicated logging module.
 
-There are two methods in this module: `file_logger` and `stream_logger`.  These methods return logger objects from Python's `logging` module.  However, they are set up in a particular way to make our job easier.
+There are two methods in this module: `file_logger` and `stream_logger`. These methods return logger objects from Python's `logging` module. However, they are set up in a particular way to make our job easier.
 
 #### file_logger
 
-The `file_logger` method returns a logger that outputs to a file.  All that it requires is a name, and it will put that log in a default location that you have write access to (`/var/log/management` for administrators, `~/Library/Logs/Management` for non-privileged) and then you can write to the log the same as any other Python logger.
+The `file_logger` method returns a logger that outputs to a file. All that it requires is a name, and it will put that log in a default location that you have write access to (`/var/log/management` for administrators, `~/Library/Logs/Management` for non-privileged) and then you can write to the log the same as any other Python logger.
 
 Example usage:
 
@@ -109,17 +110,17 @@ If we then go and look in (assuming this was run unprivileged) `~/Library/Logs/M
 
 #### stream_logger
 
-`stream_logger` is a console-only logger.  This is useful if you want to output log-formatted information to the command line at runtime.
+`stream_logger` is a console-only logger. This is useful if you want to output log-formatted information to the command line at runtime.
 
-In my scripts, I usually provide an option to not output to a log.  If this is specified, then a `stream_logger` is used instead.  That way the information still gets out, but isn't written to disk.
+In my scripts, I usually provide an option to not output to a log. If this is specified, then a `stream_logger` is used instead. That way the information still gets out, but isn't written to disk.
 
 ### plist_editor
 
-Many Apple services and applications utilize property list files, usually referred to simply as 'plists'.  These files can be modified to contain all kinds of information.
+Many Apple services and applications utilize property list files, usually referred to simply as 'plists'. These files can be modified to contain all kinds of information.
 
-However, *editing* the files can be somewhat of a hassle.  Since Mac OS X 10.9 "Mavericks", plist files are periodically cached and then rewritten asynchronously to the disk.  What this means is that if you modify a plist with a plaintext editor, **there is no guarantee that the changes will remain permanently**.  This is not exactly the ideal way for things to be done.
+However, *editing* the files can be somewhat of a hassle. Since Mac OS X 10.9 "Mavericks", plist files are periodically cached and then rewritten asynchronously to the disk. What this means is that if you modify a plist with a plaintext editor, **there is no guarantee that the changes will remain permanently**. This is not exactly the ideal way for things to be done.
 
-OS X contains a command called `defaults`.  This command provides the necessary mechanism to modify plist files without the asynchronous caching having a negative effect on your work.  This `plist_editor` module contains a class, `PlistEditor`, which allows you to modify plist files using this `defaults` command (but without you having to actually make the calls).
+OS X contains a command called `defaults`. This command provides the necessary mechanism to modify plist files without the asynchronous caching having a negative effect on your work. This `plist_editor` module contains a class, `PlistEditor`, which allows you to modify plist files using this `defaults` command (but without you having to actually make the calls).
 
 ```python
 from management_tools.plist_editor import PlistEditor
@@ -129,11 +130,11 @@ plist = PlistEditor('/path/to/file.plist')
 
 ## Scripts
 
-The scripts are mostly just simple frontends for using the modules above.  For example: perhaps you want to log something, but you don't want to go through the trouble of importing the logger and setting it up.  Instead, just use the Management Logger script and it will do the work for you.
+The scripts are mostly just simple frontends for using the modules above. For example: perhaps you want to log something, but you don't want to go through the trouble of importing the logger and setting it up. Instead, just use the Management Logger script and it will do the work for you.
 
 ### App Lookup
 
-This serves as a quick interface to the `app_info` module.  When calling the script, simply supply identifiers for applications and it will return the application's given name, bundle ID, path, and Info.plist path.
+This serves as a quick interface to the `app_info` module. When calling the script, simply supply identifiers for applications and it will return the application's given name, bundle ID, path, and Info.plist path.
 
 ```
 $ app_lookup.py safari
@@ -145,11 +146,11 @@ Safari
 
 ### Python Executable Bundler
 
-A while ago I learned that Python scripts can be bundled together in standalone 'executables'.  I did this manually for a while, and then created this script to automate it.
+A while ago I learned that Python scripts can be bundled together in standalone 'executables'. I did this manually for a while, and then created this script to automate it.
 
-Effectively what happens is this takes the Pythonic contents of a directory (i.e. all the `.py` files) and compresses them into a zipped structure.  A shebang is catted in to the zip and then chmoded to produce an 'executable'.  Note that that main entrance point of the script must be named `__main__.py` for this to work properly.
+Effectively what happens is this takes the Pythonic contents of a directory (i.e. all the `.py` files) and compresses them into a zipped structure. A shebang is catted in to the zip and then chmoded to produce an 'executable'. Note that that main entrance point of the script must be named `__main__.py` for this to work properly.
 
-Usage of the script is simple.  If you are within the directory of Python files:
+Usage of the script is simple. If you are within the directory of Python files:
 
 ```
 $ executable_bundler.py -o mybundle
@@ -171,10 +172,51 @@ $ python __main__.py
 
 ### Management Logger
 
-The Management Logger is an interface for the `file_logger` from above.  Calling Management Logger allows you to easily write a log entry to a file quickly and efficiently.  Calling the script involves:
+The Management Logger is an interface for the `file_logger` from above. Calling Management Logger allows you to easily write a log entry to a file quickly and efficiently. Calling the script involves:
 
 ```
 $ management_logger.py file "This is an entry in my log."
 ```
 
 This will log the line `"This is an entry in my log."` to a file named `file.log` located in one of two places: either `/var/log/management/` if the calling user has root privileges, or else `~/Library/Logs/Management/`.
+
+### Management Email
+
+Management Email is designed to allow your scripts to send emails easily and with minimal setup. The script has many options available, but generally only a couple of them need to actually be supplied:
+
+| Option | Purpose |
+|--------|---------|
+| `-h`, `--help` | Prints usage instructions. |
+| `-v`, `--version` | Prints version information. |
+| `-n`, `--no-log` | Prevents logs from being written to file (instead they'll come through stdio). |
+| `-l log`, `--log log` | Uses `log` as the destination for logging output. |
+| `-f file`, `--file file` | Attaches `file` to the email as a plaintext document. |
+| `-u subject`, `--subject subject` | Places `subject` in the message header. |
+| `-s server`, `--smtp-server server` | Send the mail through `server`. |
+| `-p port`, `--smtp-port port` | Connect to the server via port `port`. |
+| `-U user`, `--smtp-username user` | Connect to the server as `user`. |
+| `-P pass`, `--smtp-password pass` | Connect to the server with password `pass`. |
+| `-F address`, `--smtp-from address` | Send the mail from `address`. |
+| `-T address`, `--smtp-to address` | Send the mail to `address`. |
+
+Additionally, a message can be supplied by itself in a quoted string.
+
+In an effort to simplify administration, many of the options can be set through environment variables. These variables are:
+
+| Variable Name | Correlating command-line flag |
+|---------------|-------------------------------|
+| `MANAGEMENT_SMTP_SERVER` | `-s`, `--smtp-server` |
+| `MANAGEMENT_SMTP_PORT` | `-p`, `--smtp-port` |
+| `MANAGEMENT_SMTP_USER` | `-U`, `--smtp-username` |
+| `MANAGEMENT_SMTP_PASS` | `-P`, `--smtp-password` |
+| `MANAGEMENT_SMTP_FROM` | `-F`, `--smtp-from` |
+| `MANAGEMENT_SMTP_TO` | `-T`, `--smtp-to` |
+
+
+Environment variables can easily be set by running a command such as:
+
+```
+$ export MANAGEMENT_SMTP_SERVER='mail.example.com'
+```
+
+Note that environment variables must be declared using the `export` functionality for the script to be able to pick up on them. It is conceivable to have these set globally, but that is outside the scope of this summary.
