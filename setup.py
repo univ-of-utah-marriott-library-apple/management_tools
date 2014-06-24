@@ -15,7 +15,8 @@ setup(
     scripts=['scripts/app_lookup.py',
              'scripts/management_logger.py',
              'scripts/executable_bundler.py',
-             'scripts/management_email.py'],
+             'scripts/management_email.py',
+             'scripts/pypkg.py'],
     classifiers=[
         'Development Status :: 5 - Stable',
         'Environment :: Console',
