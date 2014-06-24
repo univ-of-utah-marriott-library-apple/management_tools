@@ -202,7 +202,7 @@ echo "Forgetting package {identifier}..."
 # Done!
 echo "Uninstallation completed."
 '''.format(identifier=identifier))
-        os.chmod(uninstall_name, 0755)
+        os.chmod(uninstall_name, 0711)
 
         # Format the file name.
         name = name.replace('#NAME', proj_name).replace('#VERSION', version)

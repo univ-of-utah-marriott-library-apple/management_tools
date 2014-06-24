@@ -223,7 +223,7 @@ Note that environment variables must be declared using the `export` functionalit
 
 ### Python Package Creator
 
-The Python Package Creator (also 'pypkg') will create an OS X-compatible `.pkg` file containing the contents of a Python project. The project *must* use the `setup.py` system, which is documented [here](https://docs.python.org/2/distutils/setupscript.html). If you aren't using this system to manage your Python projects, you may want to consider changing to it.
+The Python Package Creator (also 'PyPkg') will create an OS X-compatible `.pkg` file containing the contents of a Python project. The project *must* use the `setup.py` system, which is documented [here](https://docs.python.org/2/distutils/setupscript.html). If you aren't using this system to manage your Python projects, you may want to consider changing to it.
 
 There are a few options that can be given to the script:
 
@@ -236,7 +236,7 @@ There are a few options that can be given to the script:
 | `--dest destination` | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
 | `--python python_executable` | The `setup.py` script will be run using the Python executable at `python_executable`. |
 
-This Management Tools package (in the `/pkg/` directory) was created by running the following from within the Management Tools directory:
+This Management Tools package (in the [`/pkg/`](pkg) directory) was created by running the following from within the Management Tools directory:
 
 ```
 $ pypkg.py edu.utah.scl.management-tools ./setup.py --python /usr/bin/python --dest pkg
