@@ -12,7 +12,7 @@ options['version']   = '0.1'
 
 from management_tools import loggers
 
-def main(path, identifier, name, python):
+def main(path, identifier, name, python, destination):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -46,25 +46,24 @@ def main(path, identifier, name, python):
 
         # Find all pre-existing files.
         pre = []
-        if os.path.isdir('./pypkg'):
-            pre = os.listdir('./pypkg')
-
-        logger.info("Removing all old files in " + os.path.basename(path) + "/pypkg.")
-        try:
-            for item in pre:
-                subprocess.check_call(
-                    ['rm', '-rf', './pypkg/' + item],
-                    stderr=subprocess.STDOUT,
-                    stdout=open(os.devnull, 'w')
-                )
-        except:
-            raise RuntimeError("Could not clean directory.")
+        if os.path.isdir(destination):
+            logger.info("Removing all old files in " + os.path.basename(path) + destination)
+            pre = os.listdir(destination)
+            try:
+                for item in pre:
+                    subprocess.check_call(
+                        ['rm', '-rf', destination + item],
+                        stderr=subprocess.STDOUT,
+                        stdout=open(os.devnull, 'w')
+                    )
+            except:
+                raise RuntimeError("Could not clean directory.")
 
         # Call setup.py bdist to build the distribution archive.
         logger.info("Building distribution.")
         try:
             subprocess.check_call(
-                [python, 'setup.py', 'bdist', '-d', 'pypkg'],
+                [python, 'setup.py', 'bdist', '-d', destination],
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
             )
@@ -72,15 +71,15 @@ def main(path, identifier, name, python):
             raise RuntimeError("Distribution did not build.")
 
         # Extract the archive to get at its contents.
-        logger.info("Extracting contents to " + os.path.basename(path) + "/pypkg.")
+        logger.info("Extracting contents to " + os.path.basename(path) + destination)
         try:
-            archive = ['./pypkg/' + x for x in os.listdir('./pypkg') if x.endswith('.tar.gz')]
+            archive = [destination + x for x in os.listdir(destination) if x.endswith('.tar.gz')]
             if len(archive) == 1:
                 archive = archive[0]
             else:
                 raise RuntimeError("Could not identify unique archive.")
             subprocess.check_call(
-                ['/usr/bin/tar', 'xzf', archive, '-C', './pypkg'],
+                ['/usr/bin/tar', 'xzf', archive, '-C', destination],
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
             )
@@ -88,8 +87,8 @@ def main(path, identifier, name, python):
             raise RuntimeError("Could not extract tar archive.")
 
         # Find all files post-extraction.
-        files = os.listdir('./pypkg')
-        files = ['./pypkg/' + x for x in files]
+        files = os.listdir(destination)
+        files = [destination + x for x in files]
 
         # Remove the archive file (don't want that in the package).
         logger.info("Removing tar archive.")
@@ -104,16 +103,23 @@ def main(path, identifier, name, python):
             raise RuntimeError("Could not remove tar archive.")
 
         # Create ('touch') the uninstallation file.
-        if not os.path.isdir('./pypkg/usr/local/bin'):
-            os.makedirs('./pypkg/usr/local/bin')
-        uninstall_name = './pypkg/usr/local/bin/uninstall-' + proj_name + '.sh'
+        if not os.path.isdir(destination + '/usr/local/bin'):
+            os.makedirs(destination + '/usr/local/bin')
+        uninstall_name = (
+            destination +
+            '/usr/local/bin/uninstall-' +
+            proj_name +
+            ' ' +
+            version +
+            '.sh'
+        )
         uninstall_name = uninstall_name.lower().replace(' ', '-')
         with open(uninstall_name, 'w'):
             os.utime(uninstall_name, None)
 
         # Create a manifest of all files and subdirectories.
         manifest = []
-        for path, subdirs, files in os.walk('./pypkg'):
+        for path, subdirs, files in os.walk(destination):
             for subdir in subdirs:
                 manifest.append(os.path.join(path, subdir))
             for file in files:
@@ -124,10 +130,6 @@ def main(path, identifier, name, python):
         manifest.sort(key=lambda s: s.lower())
 
         # Create the uninstallation script for this package.
-        if not os.path.isdir('./pypkg/usr/local/bin'):
-            os.makedirs('./pypkg/usr/local/bin')
-        uninstall_name = './pypkg/usr/local/bin/uninstall-' + proj_name + '.sh'
-        uninstall_name = uninstall_name.lower().replace(' ', '-')
         with open(uninstall_name, 'w') as f:
             f.write('''\
 #!/bin/bash
@@ -159,11 +161,11 @@ echo "The following files will be removed: "
             for item in sorted(manifest, reverse=True):
                 if os.path.isdir(item):
                     f.write(
-                        "echo \"  " + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '/\"\n'
+                        "echo \"  " + item.replace(destination, '${UNINSTALL_FROM}') + '/\"\n'
                     )
                 else:
                     f.write(
-                        "echo \"  " + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '\"\n'
+                        "echo \"  " + item.replace(destination, '${UNINSTALL_FROM}') + '\"\n'
                     )
             f.write('''
 # Query the user for confirmation of removing these files.
@@ -186,11 +188,11 @@ esac
             for item in sorted(manifest, reverse=True):
                 if os.path.isdir(item):
                     f.write(
-                        'rmdir ' + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '/\n'
+                        'rmdir ' + item.replace(destination, '${UNINSTALL_FROM}') + '/\n'
                     )
                 else:
                     f.write(
-                        'rm ' + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '\n'
+                        'rm ' + item.replace(destination, '${UNINSTALL_FROM}') + '\n'
                     )
             f.write('''
 # Now forget that the package was installed...
@@ -214,8 +216,8 @@ echo "Uninstallation completed."
                 [
                     '/usr/bin/pkgbuild',
                     '--identifier', identifier,
-                    '--root', './pypkg',
-                    './pypkg/{}'.format(name)
+                    '--root', destination,
+                    destination + name
                 ],
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
@@ -234,7 +236,7 @@ echo "Uninstallation completed."
                 )
         except:
             raise RuntimeError("Could not clean directory.")
-    logger.info("Done. Package created at pypkg/{}".format(name))
+    logger.info("Done. Package created at {}".format(os.path.join(destination, name)))
 
 class ChDir:
     '''Changes directories to the new path and retains the old directory.
@@ -296,6 +298,7 @@ if __name__ == '__main__':
     parser.add_argument('-v', '--version', action='store_true')
     parser.add_argument('path', nargs='?')
     parser.add_argument('--name', default="#NAME [#VERSION]")
+    parser.add_argument('--dest', default='./pypkg/')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
                                                         'python']).strip('\n'))
@@ -307,6 +310,11 @@ if __name__ == '__main__':
     if args.path.endswith('setup.py'):
         args.path = os.path.dirname(os.path.abspath(args.path))
 
+    if not args.dest.startswith('./'):
+        args.dest = './' + args.dest
+    if not args.dest.endswith('/'):
+        args.dest += '/'
+
     if args.help:
         usage()
     elif args.version:
@@ -317,7 +325,13 @@ if __name__ == '__main__':
             usage(short=True)
             sys.exit(2)
         try:
-            main(args.path, args.identifier, args.name, args.python)
+            main(
+                path        = args.path,
+                identifier  = args.identifier,
+                name        = args.name,
+                python      = args.python,
+                destination = args.dest
+            )
         except:
             logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
             sys.exit(5)
