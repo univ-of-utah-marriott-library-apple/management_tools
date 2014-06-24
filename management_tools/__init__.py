@@ -2,4 +2,4 @@ import app_info
 import loggers
 import plist_editor
 
-__version__ = '1.5.0'
+__version__ = '1.5.1'

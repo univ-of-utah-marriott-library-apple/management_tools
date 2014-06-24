@@ -103,6 +103,14 @@ def main(path, identifier, name, python):
         except:
             raise RuntimeError("Could not remove tar archive.")
 
+        # Create ('touch') the uninstallation file.
+        if not os.path.isdir('./pypkg/usr/local/bin'):
+            os.makedirs('./pypkg/usr/local/bin')
+        uninstall_name = './pypkg/usr/local/bin/uninstall-' + proj_name + '.sh'
+        uninstall_name = uninstall_name.lower().replace(' ', '-')
+        with open(uninstall_name, 'w'):
+            os.utime(uninstall_name, None)
+
         # Create a manifest of all files and subdirectories.
         manifest = []
         for path, subdirs, files in os.walk('./pypkg'):
@@ -111,30 +119,96 @@ def main(path, identifier, name, python):
             for file in files:
                 manifest.append(os.path.join(path, file))
 
+        # Sort the manifest without case sensitivity (to preserve proper file
+        # hierarchies).
         manifest.sort(key=lambda s: s.lower())
-        with open('./pypkg/uninstall.sh', 'w') as f:
-            f.write("#!/bin/bash" + '\n')
-            f.write("UNINSTALL_FROM=\"/\"" + '\n')
-            f.write("cd $UNINSTALL_FROM" + '\n')
-            f.write('\n')
+
+        # Create the uninstallation script for this package.
+        if not os.path.isdir('./pypkg/usr/local/bin'):
+            os.makedirs('./pypkg/usr/local/bin')
+        uninstall_name = './pypkg/usr/local/bin/uninstall-' + proj_name + '.sh'
+        uninstall_name = uninstall_name.lower().replace(' ', '-')
+        with open(uninstall_name, 'w') as f:
+            f.write('''\
+#!/bin/bash
+
+# This script will remove all files installed with {proj_name} v. {version}
+# Requires root permissions.
+if [ "$(id -u)" != "0" ]; then
+    echo "Must be root to run this script!"
+    exit 1
+fi
+
+UNINSTALL_FROM=$(/usr/sbin/pkgutil --info {identifier} 2>/dev/null | grep volume | awk '{{ print substr($0, index($0,$2)) }}')
+
+if [ "$UNINSTALL_FROM" == "" ]; then
+    echo "Could not find a package receipt for {identifier}."
+    echo "Maybe it's not installed?"
+    exit 2
+fi
+
+echo "The following files will be removed: "
+
+'''.format(proj_name=proj_name, version=version, identifier=identifier))
+
+            # f.write("#!/bin/bash\n\n")
+            # f.write("# This script will remove all files installed with " + proj_name + " v" + version + ".\n")
+            # f.write("UNINSTALL_FROM=$(/usr/sbin/pkgutil --info " + identifier + " | grep volume | awk '{ print substr($0, index($0,$2)) }')\n")
+            # f.write('cd "$UNINSTALL_FROM"\n')
+            # f.write('echo The following files will be removed:\n')
             for item in sorted(manifest, reverse=True):
                 if os.path.isdir(item):
                     f.write(
-                        'rmdir ' + item.replace('/pypkg/', '/') + '/\n'
+                        "echo \"  " + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '/\"\n'
                     )
                 else:
                     f.write(
-                        'rm ' + item.replace('/pypkg/', '/') + '\n'
+                        "echo \"  " + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '\"\n'
                     )
+            f.write('''
+# Query the user for confirmation of removing these files.
+echo
+echo "NOTE: non-empty directories will *not* be deleted."
+echo
+read -r -p "Continue with uninstallation? [y/N] " response
+case $response in
+    [yY][eE][sS]|[yY])
+        echo "Performing uninstallation..."
+        ;;
+    *)
+        echo "Canceling uninstallation."
+        exit 1
+        ;;
+esac
+
+# The following performs the removal.
+''')
+            for item in sorted(manifest, reverse=True):
+                if os.path.isdir(item):
+                    f.write(
+                        'rmdir ' + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '/\n'
+                    )
+                else:
+                    f.write(
+                        'rm ' + item.replace('./pypkg/', '${UNINSTALL_FROM}') + '\n'
+                    )
+            f.write('''
+# Now forget that the package was installed...
+echo "Forgetting package {identifier}..."
+/usr/sbin/pkgutil --forget {identifier}
+
+# Done!
+echo "Uninstallation completed."
+'''.format(identifier=identifier))
+        os.chmod(uninstall_name, 0755)
 
         # Format the file name.
         name = name.replace('#NAME', proj_name).replace('#VERSION', version)
         if not name.endswith('.pkg'):
             name += '.pkg'
-        logger.info("Using file name: " + name)
 
         # Create the .pkg file.
-        logger.info("Building package.")
+        logger.info("Building package using file name: " + name)
         try:
             subprocess.check_call(
                 [
@@ -152,7 +226,7 @@ def main(path, identifier, name, python):
         # Remove everything else in the directory.
         logger.info("Cleaning up.")
         try:
-            for item in sorted(manifest, reverse=True) + ['./pypkg/uninstall.sh']:
+            for item in sorted(manifest, reverse=True) + [uninstall_name]:
                 subprocess.check_call(
                     ['rm', '-rf', item],
                     stderr=subprocess.STDOUT,
@@ -245,5 +319,5 @@ if __name__ == '__main__':
         try:
             main(args.path, args.identifier, args.name, args.python)
         except:
-            logger.error(sys.exc_info()[1].message)
+            logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
             sys.exit(5)
