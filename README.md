@@ -16,6 +16,10 @@ A collection of Python scripts and packages to simplify OS X management.
   * [Management Email](#management-email) - simple email sender
   * [Python Package Creator](#python-package-creator) - an automated .pkg creator for Python projects using 'setup.py'
 
+## Download
+
+[Download the latest installer here!](../../releases/download/v1.5.5/Management.Tools.1.5.5.pkg)
+
 ## Modules
 
 In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
