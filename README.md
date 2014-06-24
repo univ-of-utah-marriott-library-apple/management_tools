@@ -19,6 +19,7 @@ A collection of Python scripts and packages to simplify OS X management.
 ## Download
 
 [Download the latest installer here!](../../releases/)
+
 ## Modules
 
 In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
