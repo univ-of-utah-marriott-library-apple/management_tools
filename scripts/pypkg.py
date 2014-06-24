@@ -12,7 +12,7 @@ options['version']   = '0.1'
 
 from management_tools import loggers
 
-def main(path, identifier, name, python, destination):
+def main(path, identifier, name, python, destination, clean):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -225,17 +225,18 @@ echo "Uninstallation completed."
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Could not build package.")
 
-        # Remove everything else in the directory.
-        logger.info("Cleaning up.")
-        try:
-            for item in sorted(manifest, reverse=True) + [uninstall_name]:
-                subprocess.check_call(
-                    ['rm', '-rf', item],
-                    stderr=subprocess.STDOUT,
-                    stdout=open(os.devnull, 'w')
-                )
-        except:
-            raise RuntimeError("Could not clean directory.")
+        if clean:
+            # Remove everything else in the directory.
+            logger.info("Cleaning up.")
+            try:
+                for item in sorted(manifest, reverse=True) + [uninstall_name]:
+                    subprocess.check_call(
+                        ['rm', '-rf', item],
+                        stderr=subprocess.STDOUT,
+                        stdout=open(os.devnull, 'w')
+                    )
+            except:
+                raise RuntimeError("Could not clean directory.")
     logger.info("Done. Package created at {}".format(os.path.join(destination, name)))
 
 class ChDir:
@@ -289,6 +290,9 @@ usage: {} [-hv] [--name file_name] [--dest destination]
         Prints this help information.
     -v, --version
         Prints the version information.
+    --dirty
+        Leaves all files in the destination directory. The .pkg file will be at
+        the top level, alongside the other files.
     --name file_name
         The resulting .pkg file will have the name 'file_name'. There are two
         variables you can use in this naming scheme:
@@ -340,6 +344,7 @@ if __name__ == '__main__':
     parser.add_argument('path', nargs='?')
     parser.add_argument('--name', default="#NAME [#VERSION]")
     parser.add_argument('--dest', default='./pypkg/')
+    parser.add_argument('--dirty', action='store_true')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
                                                         'python']).strip('\n'))
@@ -371,7 +376,8 @@ if __name__ == '__main__':
                 identifier  = args.identifier,
                 name        = args.name,
                 python      = args.python,
-                destination = args.dest
+                destination = args.dest,
+                clean       = not args.dirty
             )
         except:
             logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
