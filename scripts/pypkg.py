@@ -281,6 +281,47 @@ def usage(short=False):
     if not short:
         version()
 
+    print('''\
+usage: {} [-hv] [--name file_name] [--dest destination]
+         [--python python_executable] identifier path
+
+    -h, --help
+        Prints this help information.
+    -v, --version
+        Prints the version information.
+    --name file_name
+        The resulting .pkg file will have the name 'file_name'. There are two
+        variables you can use in this naming scheme:
+            '#NAME':    the name given by `setup.py --name`
+            '#VERSION': the version given by `setup.py --version`
+        Default: #NAME [#VERSION]
+    --dest destination
+        The output .pkg file will be created in this subdirectory. Note that
+        this directory will be RELATIVE TO THE MAIN PATH. You cannot use an
+        absolute path here.
+        Default: pkg
+    --python python_executable
+        Files created by `setup.py bdist` can be in different locations
+        depending on which executable of python is used.
+        Default: $(/usr/bin/which python)\
+'''.format(options['name']))
+
+    if not short:
+        print('''
+'IDENTIFIER'
+    All packages must have an identifier. These are generally given in
+    reverse-DNS format, such as 'com.apple.Safari'. Your package MUST have an
+    identifier declared.
+
+'PATH'
+    This is the path to a 'setup.py' file. If no path is given, the current
+    directory is scanned for the file and if it is found, the current directory
+    is used.
+
+LOGGING
+    Logging is automatic and is written to file at:
+        /var/log/management/python_package_creator.log\
+''')
 
 class ArgumentParser(argparse.ArgumentParser):
     '''I like my own style of error-handling, thank you.'''
