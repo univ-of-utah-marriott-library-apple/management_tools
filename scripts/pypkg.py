@@ -47,7 +47,7 @@ def main(path, identifier, name, python, destination, clean):
         # Find all pre-existing files.
         pre = []
         if os.path.isdir(destination):
-            logger.info("Removing all old files in " + os.path.basename(path) + destination)
+            logger.info("Removing all old files in " + os.path.basename(path) + destination[1:])
             pre = os.listdir(destination)
             try:
                 for item in pre:
@@ -71,7 +71,7 @@ def main(path, identifier, name, python, destination, clean):
             raise RuntimeError("Distribution did not build.")
 
         # Extract the archive to get at its contents.
-        logger.info("Extracting contents to " + os.path.basename(path) + destination)
+        logger.info("Extracting contents to " + os.path.basename(path) + destination[1:])
         try:
             archive = [destination + x for x in os.listdir(destination) if x.endswith('.tar.gz')]
             if len(archive) == 1:

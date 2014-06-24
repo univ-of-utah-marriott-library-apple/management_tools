@@ -14,6 +14,7 @@ A collection of Python scripts and packages to simplify OS X management.
   * [Python Executable Bundler](#python-executable-bundler) - bundle a Python project into a standalone script
   * [Management Logger](#management-logger) - log data easily
   * [Management Email](#management-email) - simple email sender
+  * [Python Package Creator](#python-package-creator) - an automated .pkg creator for Python projects using 'setup.py'
 
 ## Modules
 
@@ -212,7 +213,6 @@ In an effort to simplify administration, many of the options can be set through 
 | `MANAGEMENT_SMTP_FROM` | `-F`, `--smtp-from` |
 | `MANAGEMENT_SMTP_TO` | `-T`, `--smtp-to` |
 
-
 Environment variables can easily be set by running a command such as:
 
 ```
@@ -220,3 +220,24 @@ $ export MANAGEMENT_SMTP_SERVER='mail.example.com'
 ```
 
 Note that environment variables must be declared using the `export` functionality for the script to be able to pick up on them. It is conceivable to have these set globally, but that is outside the scope of this summary.
+
+### Python Package Creator
+
+The Python Package Creator (also 'pypkg') will create an OS X-compatible `.pkg` file containing the contents of a Python project. The project *must* use the `setup.py` system, which is documented [here](https://docs.python.org/2/distutils/setupscript.html). If you aren't using this system to manage your Python projects, you may want to consider changing to it.
+
+There are a few options that can be given to the script:
+
+| Option | Purpose |
+|--------|---------|
+| `-h`, `--help` | Prints usage information. |
+| `-v`, `--version` | Prints version information. |
+| `--dirty` | Prevents cleanup after the package has been created. |
+| `--name file_name` | The name of the `.pkg` file will be `file_name`. The special values `#NAME` and `#VERSION` can be used to get the name and version information from `setup.py`. |
+| `--dest destination` | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
+| `--python python_executable` | The `setup.py` script will be run using the Python executable at `python_executable`. |
+
+This Management Tools package (in the `/pkg/` directory) was created by running the following from within the Management Tools directory:
+
+```
+$ pypkg.py edu.utah.scl.management-tools ./setup.py --python /usr/bin/python --dest pkg
+```
