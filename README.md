@@ -20,6 +20,28 @@ A collection of Python scripts and packages to simplify OS X management.
 
 [Download the latest installer here!](../../releases/)
 
+## System Requirements
+
+Management Tools has been tested to work with:
+
+* OS X 10.8
+* OS X 10.9
+* OS X 10.10
+
+## Contact
+
+If you have any comments, questions, or other input, either [file an issue](../../issues) or [send an email to us](mailto:mlib-its-mac-github@lists.utah.edu). Thanks!
+
+## Uninstall
+
+To uninstall Management Tools (not that you'd ever want to), run:
+
+```
+$ sudo /usr/local/bin/uninstall-management-tools-VERSION.sh
+```
+
+This will remove all traces of the package from the system.
+
 ## Modules
 
 In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
@@ -241,8 +263,20 @@ There are a few options that can be given to the script:
 | `--dest destination` | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
 | `--python python_executable` | The `setup.py` script will be run using the Python executable at `python_executable`. |
 
-This Management Tools package (in the [`/pkg/`](pkg) directory) was created by running the following from within the Management Tools directory:
+As an example, this Management Tools package (in the [`/pkg/`](pkg) directory) was created by running the following from within the Management Tools directory:
 
 ```
 $ pypkg.py edu.utah.scl.management-tools ./setup.py --python /usr/bin/python --dest pkg
 ```
+
+#### Uninstallation
+
+PyPkg automatically produces an uninstallation script for easy removal of all files it produces. This script will be located at `/usr/local/bin/uninstall-package-name-version.sh` and must be run as root. For example, if you wanted to remove Management Tools after installing it from the package **Management Tools [1.5.7].pkg**, you could do:
+
+```
+$ sudo /usr/local/bin/uninstall-management-tools-1.5.7.sh
+```
+
+The uninstallation will write a list of all files to be deleted and ask for confirmation. Note that this list may include directories used by other things that you may not want to delete - but don't worry! This script uses the `rmdir` command, which can only successfully remove directories that are completely empty (you will see "errors" printed for every directory the script does not remove successfully). So if the package installed a file at `/Library/Stuff/payload.file` and you ran the uninstallation script, `payload.file` would be removed but `/Library` would be left behind, assuming you have anythingn else in there (trust me, you do).
+
+Lastly, the uninstallation script will forget the package from the receipts database.
