@@ -12,7 +12,7 @@ options['version']   = '0.1'
 
 from management_tools import loggers
 
-def main(path, identifier, name, python, destination, clean):
+def main(path, identifier, name, version, python, destination, clean):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -35,10 +35,11 @@ def main(path, identifier, name, python, destination, clean):
             stderr=open(os.devnull, 'w')
         ).strip('\n')
         logger.info("Using project name: " + str(proj_name))
-        version = subprocess.check_output(
-            [python, 'setup.py', '--version'],
-            stderr=open(os.devnull, 'w')
-        ).strip('\n')
+        if not version:
+            version = subprocess.check_output(
+                [python, 'setup.py', '--version'],
+                stderr=open(os.devnull, 'w')
+            ).strip('\n')
         if not version:
             logger.error("No version information available.")
         else:
@@ -217,6 +218,7 @@ echo "Uninstallation completed."
                     '/usr/bin/pkgbuild',
                     '--identifier', identifier,
                     '--root', destination,
+                    '--version', version,
                     destination + name
                 ],
                 stderr=subprocess.STDOUT,
@@ -299,6 +301,10 @@ usage: {} [-hv] [--name file_name] [--dest destination]
             '#NAME':    the name given by `setup.py --name`
             '#VERSION': the version given by `setup.py --version`
         Default: #NAME [#VERSION]
+    --pkg-version version
+        This will manually set the version to be used by the package, both for
+        the naming and for the package's receipt once installed onto a system.
+        Default: whatever is returned by `setup.py --version`
     --dest destination
         The output .pkg file will be created in this subdirectory. Note that
         this directory will be RELATIVE TO THE MAIN PATH. You cannot use an
@@ -345,6 +351,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default="#NAME [#VERSION]")
     parser.add_argument('--dest', default='./pypkg/')
     parser.add_argument('--dirty', action='store_true')
+    parser.add_argument('--pkg-version')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
                                                         'python']).strip('\n'))
@@ -375,6 +382,7 @@ if __name__ == '__main__':
                 path        = args.path,
                 identifier  = args.identifier,
                 name        = args.name,
+                version     = args.pkg_version,
                 python      = args.python,
                 destination = args.dest,
                 clean       = not args.dirty

@@ -237,6 +237,7 @@ There are a few options that can be given to the script:
 | `-v`, `--version` | Prints version information. |
 | `--dirty` | Prevents cleanup after the package has been created. |
 | `--name file_name` | The name of the `.pkg` file will be `file_name`. The special values `#NAME` and `#VERSION` can be used to get the name and version information from `setup.py`. |
+| `--pkg-version version` | Manually sets the version information for the package, both for the name and for the package's receipt once installed. |
 | `--dest destination` | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
 | `--python python_executable` | The `setup.py` script will be run using the Python executable at `python_executable`. |
 
