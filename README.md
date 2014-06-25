@@ -5,6 +5,10 @@ A collection of Python scripts and packages to simplify OS X management.
 
 ## Contents
 
+* [Download](#download) - get the .pkg
+* [System Requirements](#system-requirements) - what you need
+* [Contact](#contact) - how to reach us
+* [Uninstall](#uninstall) - removal of Management Tools
 * [Modules](#modules)
   * [app_info](#app-info) - access applications' information
   * [loggers](#loggers) - output data to logs
@@ -22,7 +26,7 @@ A collection of Python scripts and packages to simplify OS X management.
 
 ## System Requirements
 
-Management Tools has been tested to work with Mac OS X 10.8 through 10.10.
+Management Tools has been tested to work with Mac OS X 10.8 through 10.10, and uses Python version 2.7.
 
 ## Contact
 
