@@ -10,9 +10,9 @@ A collection of Python scripts and packages to simplify OS X management.
 * [Contact](#contact) - how to reach us
 * [Uninstall](#uninstall) - removal of Management Tools
 * [Modules](#modules)
-  * [app_info](#app-info) - access applications' information
+  * [app_info](#app_info) - access applications' information
   * [loggers](#loggers) - output data to logs
-  * [plist_editor](#plist-editor) - modify plists properly
+  * [plist_editor](#plist_editor) - modify plists properly
 * [Scripts](#scripts)
   * [App Lookup](#app-lookup) - lookup an application's information
   * [Python Executable Bundler](#python-executable-bundler) - bundle a Python project into a standalone script
@@ -104,6 +104,51 @@ Safari
     BID:        com.apple.Safari
     Path:       /Applications/Web Browsers/Safari.app
     Info.plist: /Applications/Web Browsers/Safari.app/Contents/Info.plist
+```
+
+#### Finding Bundle Identifiers Manually
+
+Bundle identifiers are the method Apple uses to manage its TCC databases. The `AppInfo` class is good at finding them, but maybe you want to know more about where to find them yourself (for some reason).
+
+In general, BIDs can be found in an application's `Info.plist` file. If your application is located at `/Applications/MyAwesomeApp.app`, then the plist file will most likely be located at `/Applications/MyAwesomeApp.app/Contents/Info.plist`. Within this plist, you'll need to search for the string corresponding to the key `CFBundleIdentifier`. So we could do:
+
+```
+$ defaults read /Applications/MyAwesomeApp.app/Contents/Info CFBundleIdentifier
+```
+
+The `CFBundleIdentifier` key is supposed to be included for every application. If it's not there, then the application's developers did something wrong (or maybe they just did something different for a very particular reason).
+
+Brett Terpstra [detailed a shell script to help with looking these up](http://brettterpstra.com/2012/07/31/overthinking-it-fast-bundle-id-retrieval-for-mac-apps/), which I will reproduce here for your convenience:
+
+```bash
+# Allows for searching of Bundle IDs by application name
+# Written by Brett Terpstra
+bid() {
+	local shortname location
+
+	# combine all args as regex
+	# (and remove ".app" from the end if it exists due to autocomplete)
+	shortname=$(echo "${@%%.app}"|sed 's/ /.*/g')
+	# if the file is a full match in apps folder, roll with it
+	if [ -d "/Applications/$shortname.app" ]; then
+		location="/Applications/$shortname.app"
+	else # otherwise, start searching
+		location=$(mdfind -onlyin /Applications -onlyin ~/Applications -onlyin /Developer/Applications 'kMDItemKind==Application'|awk -F '/' -v re="$shortname" 'tolower($NF) ~ re {print $0}'|head -n1)
+	fi
+	# No results? Die.
+	[[ -z $location || $location = "" ]] && echo "$1 not found, I quit" && return
+	# Otherwise, find the bundleid using spotlight metadata
+	bundleid=$(mdls -name kMDItemCFBundleIdentifier -r "$location")
+	# return the result or an error message
+	[[ -z $bundleid || $bundleid = "" ]] && echo "Error getting bundle ID for \"$@\"" || echo "$location: $bundleid"
+}
+```
+
+If you were to put this in your source file (e.g. `.bash_profile`), you can simply call it as a command and it will search for your application and return both the app's location and its bundle ID:
+
+```
+$ bid safari
+/Applications/Safari.app: com.apple.Safari
 ```
 
 ### loggers
