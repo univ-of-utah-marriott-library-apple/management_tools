@@ -72,15 +72,16 @@ def main(path, identifier, name, version, python, destination, clean):
             raise RuntimeError("Distribution did not build.")
 
         # Extract the archive to get at its contents.
-        logger.info("Extracting contents to " + os.path.basename(path) + destination[1:])
+        logger.info("Extracting contents to " + os.path.basename(path) + destination[1:] + '/source')
         try:
             archive = [destination + x for x in os.listdir(destination) if x.endswith('.tar.gz')]
             if len(archive) == 1:
                 archive = archive[0]
             else:
                 raise RuntimeError("Could not identify unique archive.")
+            os.makedirs(destination + '/source')
             subprocess.check_call(
-                ['/usr/bin/tar', 'xzf', archive, '-C', destination],
+                ['/usr/bin/tar', 'xzf', archive, '-C', destination + '/source'],
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
             )
@@ -104,11 +105,11 @@ def main(path, identifier, name, version, python, destination, clean):
             raise RuntimeError("Could not remove tar archive.")
 
         # Create ('touch') the uninstallation file.
-        if not os.path.isdir(destination + '/usr/local/bin'):
-            os.makedirs(destination + '/usr/local/bin')
+        if not os.path.isdir(destination + '/source/usr/local/bin'):
+            os.makedirs(destination + '/source/usr/local/bin')
         uninstall_name = (
             destination +
-            '/usr/local/bin/uninstall-' +
+            '/source/usr/local/bin/uninstall-' +
             proj_name +
             ' ' +
             version +
@@ -120,7 +121,7 @@ def main(path, identifier, name, version, python, destination, clean):
 
         # Create a manifest of all files and subdirectories.
         manifest = []
-        for path, subdirs, files in os.walk(destination):
+        for path, subdirs, files in os.walk(destination + '/source'):
             for subdir in subdirs:
                 manifest.append(os.path.join(path, subdir))
             for file in files:
@@ -162,11 +163,11 @@ echo "The following files will be removed: "
             for item in sorted(manifest, reverse=True):
                 if os.path.isdir(item):
                     f.write(
-                        "echo \"  " + item.replace(destination, '${UNINSTALL_FROM}') + '/\"\n'
+                        "echo \"  " + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '/\"\n'
                     )
                 else:
                     f.write(
-                        "echo \"  " + item.replace(destination, '${UNINSTALL_FROM}') + '\"\n'
+                        "echo \"  " + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '\"\n'
                     )
             f.write('''
 # Query the user for confirmation of removing these files.
@@ -189,11 +190,11 @@ esac
             for item in sorted(manifest, reverse=True):
                 if os.path.isdir(item):
                     f.write(
-                        'rmdir ' + item.replace(destination, '${UNINSTALL_FROM}') + '/\n'
+                        'rmdir ' + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '/\n'
                     )
                 else:
                     f.write(
-                        'rm ' + item.replace(destination, '${UNINSTALL_FROM}') + '\n'
+                        'rm ' + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '\n'
                     )
             f.write('''
 # Now forget that the package was installed...
@@ -217,7 +218,7 @@ echo "Uninstallation completed."
                 [
                     '/usr/bin/pkgbuild',
                     '--identifier', identifier,
-                    '--root', destination,
+                    '--root', destination + '/source',
                     '--version', version,
                     destination + name
                 ],
@@ -237,6 +238,7 @@ echo "Uninstallation completed."
                         stderr=subprocess.STDOUT,
                         stdout=open(os.devnull, 'w')
                     )
+                os.rmdir(destination + '/source')
             except:
                 raise RuntimeError("Could not clean directory.")
     logger.info("Done. Package created at {}".format(os.path.join(destination, name)))
