@@ -22,11 +22,7 @@ A collection of Python scripts and packages to simplify OS X management.
 
 ## System Requirements
 
-Management Tools has been tested to work with:
-
-* OS X 10.8
-* OS X 10.9
-* OS X 10.10
+Management Tools has been tested to work with Mac OS X 10.8 through 10.10.
 
 ## Contact
 
