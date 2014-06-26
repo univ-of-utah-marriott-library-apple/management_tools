@@ -8,7 +8,7 @@ import sys
 options = {}
 options['long_name'] = "Python Package Creator"
 options['name']      = "pypkg.py"
-options['version']   = '1.4'
+options['version']   = '1.4.1'
 
 from management_tools import loggers
 
@@ -141,7 +141,7 @@ def main(path, identifier, name, version, python, destination, signature, clean,
         with open(os.path.join(script_dir, 'postinstall'), 'w') as f:
             f.write('''\
 #!/bin/bash
-# There is no spoon.
+# Forget the package from the receipts database.
 /usr/sbin/pkgutil --forget {identifier}
 '''.format(identifier=identifier))
         os.chmod(os.path.join(script_dir, 'postinstall'), 0700)
