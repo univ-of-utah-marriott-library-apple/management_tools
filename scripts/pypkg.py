@@ -7,8 +7,8 @@ import sys
 
 options = {}
 options['long_name'] = "Python Package Creator"
-options['name']      = '_'.join(options['long_name'].lower().split())
-options['version']   = '0.1'
+options['name']      = "pypkg.py"
+options['version']   = '1.2'
 
 from management_tools import loggers
 
@@ -104,108 +104,6 @@ def main(path, identifier, name, version, python, destination, clean):
         except:
             raise RuntimeError("Could not remove tar archive.")
 
-        # Create ('touch') the uninstallation file.
-        if not os.path.isdir(destination + '/source/usr/local/bin'):
-            os.makedirs(destination + '/source/usr/local/bin')
-        uninstall_name = (
-            destination +
-            '/source/usr/local/bin/uninstall-' +
-            proj_name +
-            ' ' +
-            version +
-            '.sh'
-        )
-        uninstall_name = uninstall_name.lower().replace(' ', '-')
-        with open(uninstall_name, 'w'):
-            os.utime(uninstall_name, None)
-
-        # Create a manifest of all files and subdirectories.
-        manifest = []
-        for path, subdirs, files in os.walk(destination + '/source'):
-            for subdir in subdirs:
-                manifest.append(os.path.join(path, subdir))
-            for file in files:
-                manifest.append(os.path.join(path, file))
-
-        # Sort the manifest without case sensitivity (to preserve proper file
-        # hierarchies).
-        manifest.sort(key=lambda s: s.lower())
-
-        # Create the uninstallation script for this package.
-        with open(uninstall_name, 'w') as f:
-            f.write('''\
-#!/bin/bash
-
-# This script will remove all files installed with {proj_name} v. {version}
-# Requires root permissions.
-if [ "$(id -u)" != "0" ]; then
-    echo "Must be root to run this script!"
-    exit 1
-fi
-
-UNINSTALL_FROM=$(/usr/sbin/pkgutil --info {identifier} 2>/dev/null | grep volume | awk '{{ print substr($0, index($0,$2)) }}')
-
-if [ "$UNINSTALL_FROM" == "" ]; then
-    echo "Could not find a package receipt for {identifier}."
-    echo "Maybe it's not installed?"
-    exit 2
-fi
-
-echo "The following files will be removed: "
-
-'''.format(proj_name=proj_name, version=version, identifier=identifier))
-
-            # f.write("#!/bin/bash\n\n")
-            # f.write("# This script will remove all files installed with " + proj_name + " v" + version + ".\n")
-            # f.write("UNINSTALL_FROM=$(/usr/sbin/pkgutil --info " + identifier + " | grep volume | awk '{ print substr($0, index($0,$2)) }')\n")
-            # f.write('cd "$UNINSTALL_FROM"\n')
-            # f.write('echo The following files will be removed:\n')
-            for item in sorted(manifest, reverse=True):
-                if os.path.isdir(item):
-                    f.write(
-                        "echo \"  " + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '/\"\n'
-                    )
-                else:
-                    f.write(
-                        "echo \"  " + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '\"\n'
-                    )
-            f.write('''
-# Query the user for confirmation of removing these files.
-echo
-echo "NOTE: non-empty directories will *not* be deleted."
-echo
-read -r -p "Continue with uninstallation? [y/N] " response
-case $response in
-    [yY][eE][sS]|[yY])
-        echo "Performing uninstallation..."
-        ;;
-    *)
-        echo "Canceling uninstallation."
-        exit 1
-        ;;
-esac
-
-# The following performs the removal.
-''')
-            for item in sorted(manifest, reverse=True):
-                if os.path.isdir(item):
-                    f.write(
-                        'rmdir ' + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '/\n'
-                    )
-                else:
-                    f.write(
-                        'rm ' + item.replace(destination + '/source', '${UNINSTALL_FROM}') + '\n'
-                    )
-            f.write('''
-# Now forget that the package was installed...
-echo "Forgetting package {identifier}..."
-/usr/sbin/pkgutil --forget {identifier}
-
-# Done!
-echo "Uninstallation completed."
-'''.format(identifier=identifier))
-        os.chmod(uninstall_name, 0711)
-
         # Format the file name.
         name = name.replace('#NAME', proj_name).replace('#VERSION', version)
         if not name.endswith('.pkg'):
@@ -228,11 +126,50 @@ echo "Uninstallation completed."
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Could not build package.")
 
+        # Create the uninstaller package postinstall script.
+        script_dir = destination + '/source/scripts'
+        if not os.path.isdir(script_dir):
+            os.makedirs(script_dir)
+        with open(os.path.join(script_dir, 'postinstall'), 'w') as f:
+            f.write('''\
+#!/bin/bash
+# There is no spoon.
+/usr/sbin/pkgutil --forget {identifier}
+'''.format(identifier=identifier))
+        os.chmod(os.path.join(script_dir, 'postinstall'), 0700)
+        uninstaller_name = 'Uninstall ' + name
+        logger.info("Building uninstaller using file name: " + uninstaller_name)
+        try:
+            subprocess.check_call(
+                [
+                    '/usr/bin/pkgbuild',
+                    '--identifier', identifier,
+                    '--nopayload',
+                    '--scripts', script_dir,
+                    destination + uninstaller_name
+                ],
+                stderr=subprocess.STDOUT,
+                stdout=open(os.devnull, 'w')
+            )
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError("Could not build uninstaller package.")
+
         if clean:
+            # Create a manifest of all files and subdirectories.
+            manifest = []
+            for path, subdirs, files in os.walk(destination + '/source'):
+                for subdir in subdirs:
+                    manifest.append(os.path.join(path, subdir))
+                for file in files:
+                    manifest.append(os.path.join(path, file))
+
+            # Sort the manifest without case sensitivity (to preserve proper
+            # file hierarchies).
+            manifest.sort(key=lambda s: s.lower())
             # Remove everything else in the directory.
             logger.info("Cleaning up.")
             try:
-                for item in sorted(manifest, reverse=True) + [uninstall_name]:
+                for item in sorted(manifest, reverse=True):
                     subprocess.check_call(
                         ['rm', '-rf', item],
                         stderr=subprocess.STDOUT,
@@ -241,6 +178,7 @@ echo "Uninstallation completed."
                 os.rmdir(destination + '/source')
             except:
                 raise RuntimeError("Could not clean directory.")
+
     logger.info("Done. Package created at {}".format(os.path.join(destination, name)))
 
 class ChDir:
@@ -287,8 +225,13 @@ def usage(short=False):
         version()
 
     print('''\
-usage: {} [-hv] [--name file_name] [--dest destination]
-         [--python python_executable] identifier path
+usage: {name} [-hv] [--name file_name] [--dest destination]
+\t[--python python_executable] identifier path
+
+{name} helps you to create .pkg installer packages from Python projects. If your
+project uses the standard 'setup.py' mechanism for installation, this script can
+produce an easy-to-use installer package from it, as well as an uninstaller for
+simple removal.
 
     -h, --help
         Prints this help information.
@@ -316,7 +259,7 @@ usage: {} [-hv] [--name file_name] [--dest destination]
         Files created by `setup.py bdist` can be in different locations
         depending on which executable of python is used.
         Default: $(/usr/bin/which python)\
-'''.format(options['name']))
+'''.format(name=options['name']))
 
     if not short:
         print('''
@@ -332,7 +275,22 @@ usage: {} [-hv] [--name file_name] [--dest destination]
 
 LOGGING
     Logging is automatic and is written to file at:
-        /var/log/management/python_package_creator.log\
+        /var/log/management/python_package_creator.log
+
+UNINSTALLER
+    Packages created with pypkg.py will come with an "installer package" that
+    will remove the contents of the actually installer. By default, this package
+    will be named "Uninstall (name)", where (name) is the name of the real
+    package.
+
+    The uninstaller is a payload-free package that shares the identifier
+    with the original package, thus replacing everything with nothing. It also
+    executes a postinstallation script to forget the original package in the
+    receipts database, effectively removing all traces of the original package.
+
+    NOTE that files created as a by-product of running whatever was installed
+    with the original package WILL REMAIN. This only removes the contents of the
+    installed package itself.\
 ''')
 
 class ArgumentParser(argparse.ArgumentParser):

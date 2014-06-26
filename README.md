@@ -314,14 +314,6 @@ As an example, this Management Tools package (in the [`/pkg/`](pkg) directory) w
 $ pypkg.py edu.utah.scl.management-tools ./setup.py --python /usr/bin/python --dest pkg
 ```
 
-#### Uninstallation
+#### Uninstaller
 
-PyPkg automatically produces an uninstallation script for easy removal of all files it produces. This script will be located at `/usr/local/bin/uninstall-package-name-version.sh` and must be run as root. For example, if you wanted to remove Management Tools after installing it from the package **Management Tools [1.5.7].pkg**, you could do:
-
-```
-$ sudo /usr/local/bin/uninstall-management-tools-1.5.7.sh
-```
-
-The uninstallation will write a list of all files to be deleted and ask for confirmation. Note that this list may include directories used by other things that you may not want to delete - but don't worry! This script uses the `rmdir` command, which can only successfully remove directories that are completely empty (you will see "errors" printed for every directory the script does not remove successfully). So if the package installed a file at `/Library/Stuff/payload.file` and you ran the uninstallation script, `payload.file` would be removed but `/Library` would be left behind, assuming you have anythingn else in there (trust me, you do).
-
-Lastly, the uninstallation script will forget the package from the receipts database.
+PyPkg automatically produces another `.pkg` file to *uninstall* whatever package you just produced. You can simply double-click it and it will remove the contents of the previously-installed package, and it will also forget that package from the receipts database. This is significantly easier than the previous method of running an uninstallation script from the terminal. By default this uninstallation package will be produced on the same level as the installation package, so you will be able to decide how to distribute them.
