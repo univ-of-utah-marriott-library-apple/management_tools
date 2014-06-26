@@ -8,11 +8,11 @@ import sys
 options = {}
 options['long_name'] = "Python Package Creator"
 options['name']      = "pypkg.py"
-options['version']   = '1.2'
+options['version']   = '1.3'
 
 from management_tools import loggers
 
-def main(path, identifier, name, version, python, destination, clean):
+def main(path, identifier, name, version, python, destination, clean, image):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -179,7 +179,37 @@ def main(path, identifier, name, version, python, destination, clean):
             except:
                 raise RuntimeError("Could not clean directory.")
 
-    logger.info("Done. Package created at {}".format(os.path.join(destination, name)))
+        if image:
+            logger.info("Creating disk image to bundle .pkgs.")
+            try:
+                pkgs = [x for x in os.listdir(destination)
+                        if x.endswith('.pkg')]
+                if not os.path.isdir(destination + '/pkgs'):
+                    os.makedirs(destination + '/pkgs')
+                for pkg in pkgs:
+                    os.rename(os.path.join(destination, pkg),
+                              os.path.join(destination + '/pkgs', pkg))
+                subprocess.check_call(
+                    [
+                        '/usr/bin/hdiutil',
+                        'create',
+                        '-srcfolder', destination + '/pkgs',
+                        '-format', 'UDRO',
+                        '-volname', name[:-4],
+                        '-fs', 'HFS+',
+                        destination + name[:-4]
+                    ],
+                    stderr=subprocess.STDOUT,
+                    stdout=open(os.devnull, 'w')
+                )
+                if clean:
+                    for pkg in pkgs:
+                        os.remove(os.path.join(destination + '/pkgs', pkg))
+                    os.rmdir(destination + '/pkgs')
+            except:
+                raise RuntimeError("Could not produce image of packages.")
+
+    logger.info("Done. Package created.")
 
 class ChDir:
     '''Changes directories to the new path and retains the old directory.
@@ -231,7 +261,8 @@ usage: {name} [-hv] [--name file_name] [--dest destination]
 {name} helps you to create .pkg installer packages from Python projects. If your
 project uses the standard 'setup.py' mechanism for installation, this script can
 produce an easy-to-use installer package from it, as well as an uninstaller for
-simple removal.
+simple removal. By default, these packages are bundled into a single .dmg file
+for easy distribution.
 
     -h, --help
         Prints this help information.
@@ -240,6 +271,11 @@ simple removal.
     --dirty
         Leaves all files in the destination directory. The .pkg file will be at
         the top level, alongside the other files.
+    --no-image
+        This will leave the .pkg files intact and will not bundle them into a
+        single .dmg file.
+        If you want the .pkg files *and* the .dmg, use --dirty. The packages
+        will be in the 'pkgs' folder and the source material in 'source'.
     --name file_name
         The resulting .pkg file will have the name 'file_name'. There are two
         variables you can use in this naming scheme:
@@ -304,17 +340,18 @@ class ArgumentParser(argparse.ArgumentParser):
 if __name__ == '__main__':
     setup_logger()
     parser = ArgumentParser(add_help=False)
-    parser.add_argument('identifier', nargs='?')
     parser.add_argument('-h', '--help', action='store_true')
     parser.add_argument('-v', '--version', action='store_true')
-    parser.add_argument('path', nargs='?')
-    parser.add_argument('--name', default="#NAME [#VERSION]")
-    parser.add_argument('--dest', default='./pypkg/')
     parser.add_argument('--dirty', action='store_true')
+    parser.add_argument('--no-image', action='store_true')
+    parser.add_argument('--name', default="#NAME [#VERSION]")
     parser.add_argument('--pkg-version')
+    parser.add_argument('--dest', default='./pypkg/')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
                                                         'python']).strip('\n'))
+    parser.add_argument('identifier', nargs='?')
+    parser.add_argument('path', nargs='?')
     args = parser.parse_args()
 
     if not args.path:
@@ -345,7 +382,8 @@ if __name__ == '__main__':
                 version     = args.pkg_version,
                 python      = args.python,
                 destination = args.dest,
-                clean       = not args.dirty
+                clean       = not args.dirty,
+                image       = not args.no_image
             )
         except:
             logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
