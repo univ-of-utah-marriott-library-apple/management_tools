@@ -8,11 +8,11 @@ import sys
 options = {}
 options['long_name'] = "Python Package Creator"
 options['name']      = "pypkg.py"
-options['version']   = '1.3'
+options['version']   = '1.4'
 
 from management_tools import loggers
 
-def main(path, identifier, name, version, python, destination, clean, image):
+def main(path, identifier, name, version, python, destination, signature, clean, image):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -44,6 +44,10 @@ def main(path, identifier, name, version, python, destination, clean, image):
             logger.error("No version information available.")
         else:
             logger.info("Using version: " + str(version))
+        if signature:
+            logger.info("Using signature: \"" + signature + "\"")
+        else:
+            logger.info("Not signing packages.")
 
         # Find all pre-existing files.
         pre = []
@@ -112,14 +116,18 @@ def main(path, identifier, name, version, python, destination, clean, image):
         # Create the .pkg file.
         logger.info("Building package using file name: " + name)
         try:
+            pkgbuild = [
+                '/usr/bin/pkgbuild',
+                '--identifier', identifier,
+                '--root', destination + '/source',
+                '--version', version,
+                destination + name
+            ]
+            if signature:
+                pkgbuild.append('--sign')
+                pkgbuild.append(signature)
             subprocess.check_call(
-                [
-                    '/usr/bin/pkgbuild',
-                    '--identifier', identifier,
-                    '--root', destination + '/source',
-                    '--version', version,
-                    destination + name
-                ],
+                pkgbuild,
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
             )
@@ -140,14 +148,18 @@ def main(path, identifier, name, version, python, destination, clean, image):
         uninstaller_name = 'Uninstall ' + name
         logger.info("Building uninstaller using file name: " + uninstaller_name)
         try:
+            pkgbuild = [
+                '/usr/bin/pkgbuild',
+                '--identifier', identifier,
+                '--nopayload',
+                '--scripts', script_dir,
+                destination + uninstaller_name
+            ]
+            if signature:
+                pkgbuild.append('--sign')
+                pkgbuild.append(signature)
             subprocess.check_call(
-                [
-                    '/usr/bin/pkgbuild',
-                    '--identifier', identifier,
-                    '--nopayload',
-                    '--scripts', script_dir,
-                    destination + uninstaller_name
-                ],
+                pkgbuild,
                 stderr=subprocess.STDOUT,
                 stdout=open(os.devnull, 'w')
             )
@@ -291,6 +303,11 @@ for easy distribution.
         this directory will be RELATIVE TO THE MAIN PATH. You cannot use an
         absolute path here.
         Default: pkg
+    --sign signature
+        If you want to sign your packages digitally so that they will be
+        "trusted", use this feature. 'signature' should be the common name of an
+        identity in a keychain you have access to. See the documentation for
+        pkgbuild(1) for more information.
     --python python_executable
         Files created by `setup.py bdist` can be in different locations
         depending on which executable of python is used.
@@ -347,6 +364,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default="#NAME [#VERSION]")
     parser.add_argument('--pkg-version')
     parser.add_argument('--dest', default='./pypkg/')
+    parser.add_argument('--sign')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
                                                         'python']).strip('\n'))
@@ -382,6 +400,7 @@ if __name__ == '__main__':
                 version     = args.pkg_version,
                 python      = args.python,
                 destination = args.dest,
+                signature   = args.sign,
                 clean       = not args.dirty,
                 image       = not args.no_image
             )
