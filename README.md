@@ -5,7 +5,7 @@ A collection of Python scripts and packages to simplify OS X management.
 
 ## Contents
 
-* [Download](#download) - get the .pkg
+* [Download](#download) - get the .dmg
 * [System Requirements](#system-requirements) - what you need
 * [Contact](#contact) - how to reach us
 * [Uninstall](#uninstall) - removal of Management Tools
