@@ -34,13 +34,7 @@ If you have any comments, questions, or other input, either [file an issue](../.
 
 ## Uninstall
 
-To uninstall Management Tools (not that you'd ever want to), run:
-
-```
-$ sudo /usr/local/bin/uninstall-management-tools-VERSION.sh
-```
-
-This will remove all traces of the package from the system.
+To remove Management Tools from your system, download the .dmg and run the "Uninstall Management Tools" package to uninstall it. (Note that it will say "Installation Successful" but don't believe it - it will only remove files.)
 
 ## Modules
 
