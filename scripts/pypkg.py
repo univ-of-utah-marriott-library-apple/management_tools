@@ -8,11 +8,11 @@ import sys
 options = {}
 options['long_name'] = "Python Package Creator"
 options['name']      = "pypkg.py"
-options['version']   = '1.4.1'
+options['version']   = '1.5.0'
 
 from management_tools import loggers
 
-def main(path, identifier, name, version, python, destination, signature, clean, image):
+def main(path, identifier, name, version, python, destination, signature, clean, image, extras):
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -166,6 +166,7 @@ def main(path, identifier, name, version, python, destination, signature, clean,
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Could not build uninstaller package.")
 
+        # If we're supposed to clean (not "dirty"), remove fluff stuff.
         if clean:
             # Create a manifest of all files and subdirectories.
             manifest = []
@@ -191,6 +192,15 @@ def main(path, identifier, name, version, python, destination, signature, clean,
             except:
                 raise RuntimeError("Could not clean directory.")
 
+        # Copy over extras from extras folder.
+        if extras:
+            logger.info("Placing extras into top-level with .pkgs.")
+            try:
+                distutils.dir_util.copy_tree(extras, destination)
+            except:
+                raise RuntimeError("Unable to copy extras.")
+
+        # Create .dmg image to bundle .pkgs together.
         if image:
             logger.info("Creating disk image to bundle .pkgs.")
             try:
@@ -303,6 +313,11 @@ for easy distribution.
         this directory will be RELATIVE TO THE MAIN PATH. You cannot use an
         absolute path here.
         Default: pkg
+    --extras folder
+        Recursively copies the contents of 'folder' into the top of
+        'destination' before creating a disk image. This allows for things like
+        readmes and configuration files to be distributed at the end-user's
+        discretion.
     --sign signature
         If you want to sign your packages digitally so that they will be
         "trusted", use this feature. 'signature' should be the common name of an
@@ -364,6 +379,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default="#NAME [#VERSION]")
     parser.add_argument('--pkg-version')
     parser.add_argument('--dest', default='./pypkg/')
+    parser.add_argument('--extras')
     parser.add_argument('--sign')
     parser.add_argument('--python',
                         default=subprocess.check_output(['/usr/bin/which',
@@ -402,7 +418,8 @@ if __name__ == '__main__':
                 destination = args.dest,
                 signature   = args.sign,
                 clean       = not args.dirty,
-                image       = not args.no_image
+                image       = not args.no_image,
+                extras      = os.path.abspath(args.extras)
             )
         except:
             logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
