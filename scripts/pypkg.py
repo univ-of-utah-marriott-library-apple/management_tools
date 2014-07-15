@@ -8,11 +8,12 @@ import sys
 options = {}
 options['long_name'] = "Python Package Creator"
 options['name']      = "pypkg.py"
-options['version']   = '1.5.0'
+options['version']   = '1.5.1'
 
 from management_tools import loggers
 
 def main(path, identifier, name, version, python, destination, signature, clean, image, extras):
+    logger.info('-' * 80)
     if not os.path.isdir(path):
         raise ValueError("Invalid path specified: " + str(path))
     if path.endswith('/'):
@@ -25,6 +26,11 @@ def main(path, identifier, name, version, python, destination, signature, clean,
         logger.error("Invalid Python executable given: " + str(python))
         python = subprocess.check_output(['/usr/bin/which', 'python']).strip('\n')
     logger.info("Using Python executable: " + str(python))
+    if extras:
+        extras = os.path.abspath(extras)
+        logger.info("Using extras directory: " + str(extras))
+    else:
+        logger.info("No extras to copy.")
     with ChDir(path):
         logger.info("Changed directory to: " + str(path))
         if not os.path.isfile('./setup.py'):
@@ -192,17 +198,9 @@ def main(path, identifier, name, version, python, destination, signature, clean,
             except:
                 raise RuntimeError("Could not clean directory.")
 
-        # Copy over extras from extras folder.
-        if extras:
-            logger.info("Placing extras into top-level with .pkgs.")
-            try:
-                distutils.dir_util.copy_tree(extras, destination)
-            except:
-                raise RuntimeError("Unable to copy extras.")
-
         # Create .dmg image to bundle .pkgs together.
         if image:
-            logger.info("Creating disk image to bundle .pkgs.")
+            logger.info("Moving .pkgs into place to create .dmg bundle.")
             try:
                 pkgs = [x for x in os.listdir(destination)
                         if x.endswith('.pkg')]
@@ -211,6 +209,18 @@ def main(path, identifier, name, version, python, destination, signature, clean,
                 for pkg in pkgs:
                     os.rename(os.path.join(destination, pkg),
                               os.path.join(destination + '/pkgs', pkg))
+
+                # Copy over extras from extras folder.
+                if extras:
+                    logger.info("Placing extras into top-level with .pkgs.")
+                    try:
+                        import distutils.core
+                        distutils.dir_util.copy_tree(extras,
+                                                     destination + '/pkgs')
+                    except:
+                        raise RuntimeError("Unable to copy extras.")
+
+                logger.info("Creating disk image to bundle .pkgs.")
                 subprocess.check_call(
                     [
                         '/usr/bin/hdiutil',
@@ -225,9 +235,18 @@ def main(path, identifier, name, version, python, destination, signature, clean,
                     stdout=open(os.devnull, 'w')
                 )
                 if clean:
-                    for pkg in pkgs:
-                        os.remove(os.path.join(destination + '/pkgs', pkg))
-                    os.rmdir(destination + '/pkgs')
+                    try:
+                        for path, subdirs, files in os.walk(
+                            os.path.join(destination, 'pkgs'),
+                            topdown=False
+                        ):
+                            for file in files:
+                                os.remove(os.path.join(path, file))
+                            for subdir in subdirs:
+                                os.rmdir(os.path.join(path, subdir))
+                        os.rmdir(destination + '/pkgs')
+                    except OSError:
+                        raise RuntimeError("Could not empty pkgs subdirectory.")
             except:
                 raise RuntimeError("Could not produce image of packages.")
 
@@ -419,7 +438,7 @@ if __name__ == '__main__':
                 signature   = args.sign,
                 clean       = not args.dirty,
                 image       = not args.no_image,
-                extras      = os.path.abspath(args.extras)
+                extras      = args.extras
             )
         except:
             logger.error(sys.exc_info()[0].__name__ + ": " + sys.exc_info()[1].message)
