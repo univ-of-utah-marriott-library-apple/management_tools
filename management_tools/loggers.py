@@ -7,12 +7,13 @@ ELEVATED_PATH = '/var/log/management/'
 LOCAL_PATH = '~/Library/Logs/Management/'
 
 def file_logger (name=None, level=logging.INFO, path=None):
-    '''Returns a rotating file logger.  The default location is:
+    """
+    Returns a rotating file logger.  The default location is:
         ELEVATED_PATH/<name>.log
     If the current user does not have write access to this location, instead
     the logs will be written to:
         LOCAL_PATH/<name>.log
-    '''
+    """
 
     # Get the path.
     if not path:
@@ -68,3 +69,49 @@ def stream_logger (level=logging.INFO):
     logger.addHandler(handler)
 
     return logger
+
+class Logger(object):
+    def __init__(self, name, log, log_dest=''):
+        if not log:
+            self.logger = stream_logger(1)
+        else:
+            if log_dest:
+                self.logger = file_logger(name, path=log_dest)
+            else:
+                self.logger = file_logger(name)
+    
+    def debug(self, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.debug(information, *args, **kwargs)
+    
+    def info(self, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.info(information, *args, **kwargs)
+    
+    def warning(self, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.warning(information, *args, **kwargs)
+        
+    def error(self, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.error(information, *args, **kwargs)
+    
+    def critical(self, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.critical(information, *args, **kwargs)
+    
+    def log(self, level, information, print_out=True, log=True, *args, **kwargs):
+        if print_out:
+            print("{}".format(information))
+        if log:
+            self.logger.log(information, *args, **kwargs)
