@@ -30,7 +30,7 @@ class Logger(logging.Logger):
         """
         Log 'message' as debugging output.
         """
-        if print_out:
+        if print_out and self.level <= logging.DEBUG:
             print("DEBUG: {}".format(message))
         if log:
             super(Logger, self).debug(message)
@@ -39,7 +39,7 @@ class Logger(logging.Logger):
         """
         Log 'message' as general information.
         """
-        if print_out:
+        if print_out and self.level <= logging.INFO:
             print("{}".format(message))
         if log:
             super(Logger, self).info(message)
@@ -49,7 +49,7 @@ class Logger(logging.Logger):
         Log 'message' as a warning (not enough to halt execution, but enough to
         be notable).
         """
-        if print_out:
+        if print_out and self.level <= logging.WARNING:
             print("Warning: {}".format(message))
         if log:
             super(Logger, self).warning(message)
@@ -60,8 +60,8 @@ class Logger(logging.Logger):
         """
         Log 'message' as an error.
         """
-        if print_out:
-            print("Error: {}".format(message))
+        if print_out and self.level <= logging.ERROR:
+            print("ERROR: {}".format(message))
         if log:
             super(Logger, self).error(message)
     
@@ -70,7 +70,7 @@ class Logger(logging.Logger):
         Log 'message' as a critical failure. This should probably halt
         execution more often than not.
         """
-        if print_out:
+        if print_out and self.level <= logging.CRITICAL:
             print("CRITICAL: {}".format(message))
         if log:
             super(Logger, self).critical(message)
@@ -81,7 +81,7 @@ class Logger(logging.Logger):
         """
         Log 'message' with a custom logging level.
         """
-        if print_out:
+        if print_out and self.level <= level:
             print("{}".format(message))
         if log:
             super(Logger, self).log(level, message)
