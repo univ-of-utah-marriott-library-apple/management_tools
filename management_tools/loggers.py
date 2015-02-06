@@ -197,7 +197,7 @@ class StreamLogger(Logger):
         
         self.addHandler(handler)
 
-def get_logger(name=None, log=False, path=None):
+def get_logger(name=None, log=False, level=logging.INFO, path=None):
     """
     Returns the appropriate logger depending on the passed-in arguments.
     
@@ -206,9 +206,9 @@ def get_logger(name=None, log=False, path=None):
     """
     # Are we writing the output to disk? Pick the type of logger based on that.
     if log:
-        return FileLogger(name=name, path=path)
+        return FileLogger(name=name, level=level, path=path)
     else:
-        return StreamLogger(name=name)
+        return StreamLogger(name=name, level=level)
 
 def file_logger(name=None, level=logging.INFO, path=None):
     """
