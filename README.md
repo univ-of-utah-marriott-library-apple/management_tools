@@ -36,6 +36,15 @@ If you have any comments, questions, or other input, either [file an issue](../.
 
 To remove Management Tools from your system, download the .dmg and run the "Uninstall Management Tools" package to uninstall it. (Note that it will say "Installation Successful" but don't believe it - it will only remove files.)
 
+## Get Current Version
+
+If you want to find your currently-installed Management Tools version, simply do:
+
+```bash
+$ python -m management_tools.__init__
+Management Tools, version: x.y.z
+```
+
 ## Modules
 
 In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
