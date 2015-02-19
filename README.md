@@ -45,6 +45,8 @@ $ python -m management_tools.__init__
 Management Tools, version: x.y.z
 ```
 
+Note that this will only work from version 1.6.3 on.
+
 ## Modules
 
 In Python, modules are designed to be imported into another project to make your life easier. These can be integrated into your packages by simply using:
