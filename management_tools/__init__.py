@@ -2,7 +2,7 @@ import app_info
 import loggers
 import plist_editor
 
-__version__ = '1.6.4'
+__version__ = '1.7.0'
 __all__     = ['app_info', 'loggers', 'plist_editor']
 
 # This provides the ability to get the version from the command line.
