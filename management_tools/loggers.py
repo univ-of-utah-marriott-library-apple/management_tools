@@ -3,8 +3,15 @@ import logging
 import logging.handlers
 import os
 
-ELEVATED_PATH = '/var/log/management/'
-LOCAL_PATH = '~/Library/Logs/Management/'
+ELEVATED_PATH   = '/var/log/management/'
+LOCAL_PATH      = '~/Library/Logs/Management/'
+DEFAULT_PROMPTS = {
+    logging.DEBUG:    "DEBUG: ",
+    logging.INFO:     "",
+    logging.WARNING:  "Warning: ",
+    logging.ERROR:    "ERROR: ",
+    logging.CRITICAL: "CRITICAL: ",
+}
 
 class Logger(logging.Logger):
     """
@@ -25,22 +32,33 @@ class Logger(logging.Logger):
         
         # Call the super constructor to build the actual logger.
         super(Logger, self).__init__(name=name, level=level)
+        
+        # Set the default prompts for this logger.
+        self.prompts = DEFAULT_PROMPTS.copy()
     
     def debug(self, message, print_out=True, log=True):
         """
         Log 'message' as debugging output.
+        
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= logging.DEBUG:
-            print("DEBUG: {}".format(message))
+            print("{prompt}{message}".format(prompt=self.prompts[logging.DEBUG], message=message))
         if log:
             super(Logger, self).debug(message)
     
     def info(self, message, print_out=True, log=True):
         """
         Log 'message' as general information.
+        
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= logging.INFO:
-            print("{}".format(message))
+            print("{prompt}{message}".format(prompt=self.prompts[logging.INFO], message=message))
         if log:
             super(Logger, self).info(message)
     
@@ -48,9 +66,13 @@ class Logger(logging.Logger):
         """
         Log 'message' as a warning (not enough to halt execution, but enough to
         be notable).
+        
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= logging.WARNING:
-            print("Warning: {}".format(message))
+            print("{prompt}{message}".format(prompt=self.prompts[logging.WARNING], message=message))
         if log:
             super(Logger, self).warning(message)
         
@@ -59,9 +81,13 @@ class Logger(logging.Logger):
     def error(self, message, print_out=True, log=True):
         """
         Log 'message' as an error.
+        
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= logging.ERROR:
-            print("ERROR: {}".format(message))
+            print("{prompt}{message}".format(prompt=self.prompts[logging.ERROR], message=message))
         if log:
             super(Logger, self).error(message)
     
@@ -69,9 +95,13 @@ class Logger(logging.Logger):
         """
         Log 'message' as a critical failure. This should probably halt
         execution more often than not.
+        
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= logging.CRITICAL:
-            print("CRITICAL: {}".format(message))
+            print("{prompt}{message}".format(prompt=self.prompts[logging.CRITICAL], message=message))
         if log:
             super(Logger, self).critical(message)
     
@@ -80,11 +110,26 @@ class Logger(logging.Logger):
     def log(self, level, message, print_out=True, log=True):
         """
         Log 'message' with a custom logging level.
+        
+        :param level: The verbosity level to log at.
+        :param message: Information to display.
+        :param print_out: Whether to print to stdout.
+        :param log: Whether to commit this to the logger.
         """
         if print_out and self.level <= level:
             print("{}".format(message))
         if log:
             super(Logger, self).log(level, message)
+    
+    def set_prompt(self, level, prompt):
+        """
+        Set a new default prompt. Useful for outputting custom information with
+        custom logging levels.
+        
+        :param level: The level for the prompt to display at.
+        :param prompt: The prompt to display.
+        """
+        self.prompts[level] = prompt
         
 class FileLogger(Logger):
     """
@@ -107,12 +152,9 @@ class FileLogger(Logger):
         on the inspection stack; the level will be set to INFO; and the path
         will be set to the class defaults.
         
-        :param name: the name of the logger (e.g. "myprogram")
-        :type  name: str
-        :param level: the logging level for output
-        :type  level: int
-        :param path: the directory to put the log file inside
-        :type  path: str
+        :param name: The name of the logger (e.g. "myprogram").
+        :param level: The logging level for output.
+        :param path: The directory to put the log file inside.
         """
         
         # Did they specify a path?
@@ -203,6 +245,12 @@ def get_logger(name=None, log=False, level=logging.INFO, path=None):
     
     This is particularly useful in conjunction with command-line arguments when
     you won't know for sure what kind of logger the program will need.
+    
+    :param name: The name of the file to log into.
+    :param log: Whether to actually commit information to a file.
+    :param level: The verbosity level. Only events logged at or above this level
+                  will be displayed.
+    :param path: The folder to put the log file into.
     """
     # Are we writing the output to disk? Pick the type of logger based on that.
     if log:
@@ -214,6 +262,11 @@ def file_logger(name=None, level=logging.INFO, path=None):
     """
     Provides backwards compatibility with previous versions of Management Tools
     (i.e. version < 1.6.0).
+    
+    :param name: The name of the file to log into.
+    :param level: The verbosity level. Only events logged at or above this level
+                  will be displayed.
+    :param path: The folder to put the log file into.
     """
     return FileLogger(name=name, level=level, path=path)
 
@@ -221,5 +274,8 @@ def stream_logger(level=logging.DEBUG):
     """
     Provides backwards compatibility with previous versions of Management Tools
     (i.e. version < 1.6.0).
+    
+    :param level: The verbosity level. Only events logged at or above this level
+                  will be displayed.
     """
     return StreamLogger(name=None, level=level)
