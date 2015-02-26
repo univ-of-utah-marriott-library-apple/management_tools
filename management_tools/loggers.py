@@ -267,7 +267,7 @@ class FileLogger(Logger):
     
     The default logging severity level is INFO.
     """
-    def __init__(self, name=None, level=INFO, path=None, print_default=True, log_default=True):
+    def __init__(self, name=None, level=INFO, path=None, print_default=True, log_default=True, log_size=10485760, backup_count=5):
         """
         Create the rotating file logger. By default, the name will be set based
         on the inspection stack; the level will be set to INFO; and the path
@@ -326,7 +326,7 @@ class FileLogger(Logger):
         # would produce a line as:
         #   2015-02-05 17:29:48,289 INFO: This is some test output!
         formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s')
-        handler   = logging.handlers.RotatingFileHandler(destination, maxBytes=10485760, backupCount=5)
+        handler   = logging.handlers.RotatingFileHandler(destination, maxBytes=log_size, backupCount=backup_count)
         handler.setFormatter(formatter)
         
         self.addHandler(handler)
@@ -338,7 +338,7 @@ class StreamLogger(Logger):
     
     The default logging severity level is DEBUG.
     """
-    def __init__(self, name=None, level=DEBUG, print_default=True, log_default=False):
+    def __init__(self, name=None, level=DEBUG, print_default=False, log_default=True):
         """
         Build the stream logger as specified. The default logging level is set
         at DEBUG.

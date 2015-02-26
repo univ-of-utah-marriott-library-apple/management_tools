@@ -95,6 +95,7 @@ So, for example, if we use `com.apple.Safari` as our application (this is in int
 'com.apple.Safari'
 >>> app.name
 'Safari'
+>>>
 ```
 
 Alternatively, the information can also be returned more simply for outputting purposes:
@@ -107,6 +108,7 @@ Safari
     BID:        com.apple.Safari
     Path:       /Applications/Web Browsers/Safari.app
     Info.plist: /Applications/Web Browsers/Safari.app/Contents/Info.plist
+>>>
 ```
 
 #### Finding Bundle Identifiers Manually
@@ -158,36 +160,149 @@ $ bid safari
 
 In our deployment, we like to log stuff. Logging things is a useful way to record information for later perusal, which can be quite helpful. Since I kept having to copy/paste our logging mechanisms from script to script, I just created a dedicated logging module.
 
-There are two methods in this module: `file_logger` and `stream_logger`. These methods return logger objects from Python's `logging` module. However, they are set up in a particular way to make our job easier.
+There are three classes in this module: the generic `Logger`, and the more specific `FileLogger` and `StreamLogger` (which both extend the base `Logger` class). `FileLogger` is used to output information to a file and/or the console, and `StreamLogger` only outputs information to the console.
 
-#### file_logger
+#### FileLogger
 
-The `file_logger` method returns a logger that outputs to a file. All that it requires is a name, and it will put that log in a default location that you have write access to (`/var/log/management` for administrators, `~/Library/Logs/Management` for non-privileged) and then you can write to the log the same as any other Python logger.
+The `FileLogger` class is built on a rotating file handler. The default is set to keep five backup files (so up to six files total) that are 10MB each. This logger can also output information to the console, allowing an easy way to output information and control verbosity while logging everything. The default log location is either `/var/log/management/` for administrators with write access to that directory, or else `~/Library/Logs/Management/` for non-privileged users.
 
-Example usage:
+##### Example Usage
 
-```python
->>> from management_tools.loggers import file_logger
->>> logger = file_logger('test')
+```
+>>> from management_tools.loggers import FileLogger
+>>> logger = FileLogger('test')
 >>> logger.info("This is regular information.")
+INFO: This is regular information.
 >>> logger.debug("Super verbose (not logged by default, unless the level is changed).")
 >>> logger.error("This is an error.")
+ERROR: This is an error.
 >>> logger.fatal("Danger, Will Robinson! Danger!")
+CRITICAL: Danger, Will Robinson! Danger!
+>>>
 ```
 
 If we then go and look in (assuming this was run unprivileged) `~/Library/Logs/Management/test.log`:
 
 ```
-2014-05-05 14:41:55,719 INFO: This is regular information.
-2014-05-05 14:42:01,399 ERROR: This is an error.
-2014-05-05 14:42:18,688 CRITICAL: Danger, Will Robinson! Danger!
+2015-02-26 10:04:12,238 INFO: This is regular information.
+2015-02-26 10:04:22,614 ERROR: This is an error.
+2015-02-26 10:04:26,206 CRITICAL: Danger, Will Robinson! Danger!
 ```
 
-#### stream_logger
+There is also a `file_logger` method to provide backwards compatibility with scripts written to use Management Tools versions less than 1.6.0:
 
-`stream_logger` is a console-only logger. This is useful if you want to output log-formatted information to the command line at runtime.
+```python
+def file_logger(name=None, level=INFO, path=None):
+```
 
-In my scripts, I usually provide an option to not output to a log. If this is specified, then a `stream_logger` is used instead. That way the information still gets out, but isn't written to disk.
+#### StreamLogger
+
+`StreamLogger` is used in situations where you want to provide a logger, but you may not want to write the data to file. I use this in scripts where I give the user the option of enabling logging through a command line flag. If they specify that they do not want information logged to a file, a `StreamLogger` is used in place of the `FileLogger`.
+
+By default, `StreamLogger` does *not* have the `print_default` field set to `True`. Instead, it redirects the actual log messages (with timestamps et al) and prints those to the console.
+
+As with the `FileLogger`, there is also a `stream_logger` method to provide backwards compatibility with scripts written to use Management Tools versions less than 1.6.0:
+
+```python
+def stream_logger(level=DEBUG):
+```
+
+#### General Logger Specifics
+
+To easily get a logger with the default specifications, the module provides a method for each logger: `FileLogger` has `file_logger()`, and `StreamLogger` has `stream_logger()`. Simply do:
+
+```
+>>> from management_tools.loggers import file_logger
+>>> logger = stream_logger()
+>>> logger.info("Time is an illusion. Lunchtime doubly so.")
+2015-02-26 12:11:50,837 INFO: Time is an illusion. Lunchtime doubly so.
+>>>
+```
+
+In most of my scripts, I allow the user to specify whether log events will be outputted to file, and if they are where to put that file. To make my life easier (and possibly yours too!), there is now a method to allow the programmatic generation of loggers appropriate to these options: `get_logger()`.
+
+```python
+def get_logger(name=None, log=False, level=INFO, path=None):
+```
+
+A simple usage example would be:
+
+```
+>>> from management_tools.loggers import get_logger
+>>> logger = get_logger(name='fjords', log=True, path='/zz9/earth/norway')
+>>>
+```
+
+This would return a `FileLogger`, set to generate a file at `/zz9/earth/norway/fjords.log`. If `log` were set to `False`, the file would not be used.
+
+##### Logging Levels and Methods
+
+There are six different logging levels supported (all of them except for `VERBOSE` copy their values from the standard `logging` module):
+
+| Logging Level | Default Value           |
+|---------------|-------------------------|
+| CRITICAL      | 50 (`logging.CRITICAL`) |
+| ERROR         | 40 (`logging.ERROR`)    |
+| WARNING       | 30 (`logging.WARNING`)  |
+| INFO          | 20 (`logging.INFO`)     |
+| DEBUG         | 10 (`logging.DEBUG`)    |
+| VERBOSE       | 5                       |
+
+Each of these levels of logging also has a corresponding method for generating logging output. Assuming you have a `Logger` object named `logger`:
+
+| Method            | Purpose                                            |
+|-------------------|----------------------------------------------------|
+| `logger.critical` | Fatal errors that impede program flow.             |
+| `logger.error`    | Important errors that may yield undesired results. |
+| `logger.warning`  | Issues that are not halting, but not ideal.        |
+| `logger.info`     | Regular information.                               |
+| `logger.debug`    | Debugging information.                             |
+| `logger.verbose`  | Very detailed information.                         |
+
+##### Controlling Output
+
+The console output can be controlled. Each of the logging methods has a signature such as:
+
+```python
+def info(self, message, print_out=None, log=None):
+```
+
+`print_out` and `log` take booleans for arguments. If you pass `True` to both (the default for `FileLogger`), you get output to both the console (`print_out`) and the logging file (`log`). The defaults can be changed by modifying the logger's `print_default` and `log_default` fields, for example:
+
+```
+>>> from management_tools.loggers import FileLogger
+>>> logger = FileLogger('test')
+>>> logger.info("This must be Thursday. I never could get the hang of Thursdays.")
+INFO: This must be Thursday. I never could get the hang of Thursdays.
+>>> logger.print_default = False
+>>> logger.info("For a moment, nothing happened. Then, after a second or so, nothing continued to happen.")
+>>> logger.log_default = False
+>>> logger.info("Oh no, not again!")
+>>> logger.info("So long, and thanks for all the fish!", print_out=True)
+INFO: So long, and thanks for all the fish!
+>>>
+```
+
+If we then go and look in `~/Library/Logs/Management/test.log` (assuming this was run unprivileged):
+
+```
+2015-02-26 11:37:44,394 INFO: This must be Thursday. I never could get the hang of Thursdays.
+2015-02-26 11:38:00,347 INFO: For a moment, nothing happened. Then, after a second or so, nothing continued to happen.
+```
+
+##### Custom Prompts
+
+When log messages are outputted to the console, they are by default prepended with their logging level name (in all caps). You can override the prompt for each level. Note that this is only for console output and not for the actual log messages.
+
+```
+>>> from management_tools import loggers
+>>> logger = loggers.StreamLogger('ford', loggers.INFO, True, False)
+>>> logger.info("How would you react if I said that I'm not from Guildford at all, but from a small planet somewhere in the vicinity of Betelgeuse?")
+INFO: How would you react if I said that I'm not from Guildford at all, but from a small planet somewhere in the vicinity of Betelgeuse?
+>>> logger.set_prompt(loggers.INFO, 'Ford: ')
+>>> logger.info("The point is that I am now a perfectly safe penguin, and my colleague here is rapidly running out of limbs!")
+Ford: The point is that I am now a perfectly safe penguin, and my colleague here is rapidly running out of limbs!
+```
 
 ### plist_editor
 
@@ -259,33 +374,33 @@ This will log the line `"This is an entry in my log."` to a file named `file.log
 
 Management Email is designed to allow your scripts to send emails easily and with minimal setup. The script has many options available, but generally only a couple of them need to actually be supplied:
 
-| Option | Purpose |
-|--------|---------|
-| `-h`, `--help` | Prints usage instructions. |
-| `-v`, `--version` | Prints version information. |
-| `-n`, `--no-log` | Prevents logs from being written to file (instead they'll come through stdio). |
-| `-l log`, `--log log` | Uses `log` as the destination for logging output. |
-| `-f file`, `--file file` | Attaches `file` to the email as a plaintext document. |
-| `-u subject`, `--subject subject` | Places `subject` in the message header. |
-| `-s server`, `--smtp-server server` | Send the mail through `server`. |
-| `-p port`, `--smtp-port port` | Connect to the server via port `port`. |
-| `-U user`, `--smtp-username user` | Connect to the server as `user`. |
-| `-P pass`, `--smtp-password pass` | Connect to the server with password `pass`. |
-| `-F address`, `--smtp-from address` | Send the mail from `address`. |
-| `-T address`, `--smtp-to address` | Send the mail to `address`. |
+| Option                              | Purpose                                                                        |
+|-------------------------------------|--------------------------------------------------------------------------------|
+| `-h`, `--help`                      | Prints usage instructions.                                                     |
+| `-v`, `--version`                   | Prints version information.                                                    |
+| `-n`, `--no-log`                    | Prevents logs from being written to file (instead they'll come through stdio). |
+| `-l log`, `--log log`               | Uses `log` as the destination for logging output.                              |
+| `-f file`, `--file file`            | Attaches `file` to the email as a plaintext document.                          |
+| `-u subject`, `--subject subject`   | Places `subject` in the message header.                                        |
+| `-s server`, `--smtp-server server` | Send the mail through `server`.                                                |
+| `-p port`, `--smtp-port port`       | Connect to the server via port `port`.                                         |
+| `-U user`, `--smtp-username user`   | Connect to the server as `user`.                                               |
+| `-P pass`, `--smtp-password pass`   | Connect to the server with password `pass`.                                    |
+| `-F address`, `--smtp-from address` | Send the mail from `address`.                                                  |
+| `-T address`, `--smtp-to address`   | Send the mail to `address`.                                                    |
 
 Additionally, a message can be supplied by itself in a quoted string.
 
 In an effort to simplify administration, many of the options can be set through environment variables. These variables are:
 
-| Variable Name | Correlating command-line flag |
-|---------------|-------------------------------|
-| `MANAGEMENT_SMTP_SERVER` | `-s`, `--smtp-server` |
-| `MANAGEMENT_SMTP_PORT` | `-p`, `--smtp-port` |
-| `MANAGEMENT_SMTP_USER` | `-U`, `--smtp-username` |
-| `MANAGEMENT_SMTP_PASS` | `-P`, `--smtp-password` |
-| `MANAGEMENT_SMTP_FROM` | `-F`, `--smtp-from` |
-| `MANAGEMENT_SMTP_TO` | `-T`, `--smtp-to` |
+| Variable Name            | Correlating command-line flag |
+|--------------------------|-------------------------------|
+| `MANAGEMENT_SMTP_SERVER` | `-s`, `--smtp-server`         |
+| `MANAGEMENT_SMTP_PORT`   | `-p`, `--smtp-port`           |
+| `MANAGEMENT_SMTP_USER`   | `-U`, `--smtp-username`       |
+| `MANAGEMENT_SMTP_PASS`   | `-P`, `--smtp-password`       |
+| `MANAGEMENT_SMTP_FROM`   | `-F`, `--smtp-from`           |
+| `MANAGEMENT_SMTP_TO`     | `-T`, `--smtp-to`             |
 
 Environment variables can easily be set by running a command such as:
 
@@ -301,17 +416,17 @@ The Python Package Creator (also 'PyPkg') will create an OS X-compatible `.pkg` 
 
 There are a few options that can be given to the script:
 
-| Option | Purpose |
-|--------|---------|
-| `-h`, `--help` | Prints usage information. |
-| `-v`, `--version` | Prints version information. |
-| `--dirty` | Prevents cleanup after the package has been created. |
-| `--no-image` | Does not produce the `.dmg` file and instead leaves the `.pkg`s in a `pkgs` subfolder. |
-| `--name file_name` | The name of the `.pkg` file will be `file_name`. The special values `#NAME` and `#VERSION` can be used to get the name and version information from `setup.py`. |
-| `--pkg-version version` | Manually sets the version information for the package, both for the name and for the package's receipt once installed. |
-| `--dest destination` | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
-| `--extras directory` | The contents of `directory` will be added to the top level of the disk image produced. This is useful for readmes and configuration files. |
-| `--sign signature` | Allows you to digitally sign the package with an identity so that it will be trusted. See [Apple's documentation on code signing](https://developer.apple.com/library/mac/documentation/security/conceptual/CodeSigningGuide/Procedures/Procedures.html). |
+| Option                       | Purpose |
+|------------------------------|---------|
+| `-h`, `--help`               | Prints usage information. |
+| `-v`, `--version`            | Prints version information. |
+| `--dirty`                    | Prevents cleanup after the package has been created. |
+| `--no-image`                 | Does not produce the `.dmg` file and instead leaves the `.pkg`s in a `pkgs` subfolder. |
+| `--name file_name`           | The name of the `.pkg` file will be `file_name`. The special values `#NAME` and `#VERSION` can be used to get the name and version information from `setup.py`. |
+| `--pkg-version version`      | Manually sets the version information for the package, both for the name and for the package's receipt once installed. |
+| `--dest destination`         | The `.pkg` file will be created at `destination`. Note that this is relative to the path given to the script. |
+| `--extras directory`         | The contents of `directory` will be added to the top level of the disk image produced. This is useful for readmes and configuration files. |
+| `--sign signature`           | Allows you to digitally sign the package with an identity so that it will be trusted. See [Apple's documentation on code signing](https://developer.apple.com/library/mac/documentation/security/conceptual/CodeSigningGuide/Procedures/Procedures.html). |
 | `--python python_executable` | The `setup.py` script will be run using the Python executable at `python_executable`. |
 
 As an example, this Management Tools package (in the [`/pkg/`](pkg) directory) was created by running the following from within the Management Tools directory:
