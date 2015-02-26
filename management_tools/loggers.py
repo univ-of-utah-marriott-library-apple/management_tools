@@ -23,13 +23,31 @@ ERROR    = logging.ERROR
 CRITICAL = logging.CRITICAL
 FATAL    = CRITICAL
 
+LEVEL_NAMES = {
+    CRITICAL   : 'CRITICAL',
+    ERROR      : 'ERROR',
+    WARNING    : 'WARNING',
+    INFO       : 'INFO',
+    DEBUG      : 'DEBUG',
+    VERBOSE    : 'VERBOSE',
+    NOTSET     : 'NOTSET',
+    'CRITICAL' : CRITICAL,
+    'ERROR'    : ERROR,
+    'WARN'     : WARNING,
+    'WARNING'  : WARNING,
+    'INFO'     : INFO,
+    'DEBUG'    : DEBUG,
+    'VERBOSE'  : VERBOSE,
+    'NOTSET'   : NOTSET,
+}
+
 DEFAULT_PROMPTS = {
-    VERBOSE  : "VERBOSE: ",
-    DEBUG    : "DEBUG: ",
-    INFO     : "",
-    WARNING  : "Warning: ",
-    ERROR    : "Error: ",
-    CRITICAL : "CRITICAL: ",
+    VERBOSE  : "{level}: ".format(level=LEVEL_NAMES[VERBOSE]),
+    DEBUG    : "{level}: ".format(level=LEVEL_NAMES[DEBUG]),
+    INFO     : "{level}: ".format(level=LEVEL_NAMES[INFO]),
+    WARNING  : "{level}: ".format(level=LEVEL_NAMES[WARNING]),
+    ERROR    : "{level}: ".format(level=LEVEL_NAMES[ERROR]),
+    CRITICAL : "{level}: ".format(level=LEVEL_NAMES[CRITICAL]),
 }
 
 ELEVATED_PATH = '/var/log/management/'
@@ -55,12 +73,36 @@ class Logger(logging.Logger):
         # Call the super constructor to build the actual logger.
         super(Logger, self).__init__(name=name, level=level)
         
-        # Set the default prompts for this logger.
-        self.prompts = DEFAULT_PROMPTS.copy()
+        # Set the default level names and prompts for this logger.
+        self.level_names = LEVEL_NAMES.copy()
+        self.prompts     = DEFAULT_PROMPTS.copy()
         
         # Set the default for printing and logging.
         self.print_default = print_default
         self.log_default   = log_default
+    
+    def add_level_name(self, level, level_name):
+        """
+        Allows for custom level names to be used. This is used in logging
+        output.
+        
+        :param level: The numeric value of the level.
+        :param level_name: The name for that level of logging.
+        """
+        self.level_names[level]      = level_name
+        self.level_names[level_name] = level
+        
+        logging.addLevelName(level, level_name)
+
+    def set_prompt(self, level, prompt):
+        """
+        Set a new default prompt. Useful for outputting custom information with
+        custom logging levels.
+        
+        :param level: The level for the prompt to display at.
+        :param prompt: The prompt to display.
+        """
+        self.prompts[level] = prompt
         
     def verbose(self, message, print_out=None, log=None):
         """
@@ -209,16 +251,6 @@ class Logger(logging.Logger):
             print("{prompt}{message}".format(prompt=prompt, message=message))
         if log:
             super(Logger, self).log(level, message)
-    
-    def set_prompt(self, level, prompt):
-        """
-        Set a new default prompt. Useful for outputting custom information with
-        custom logging levels.
-        
-        :param level: The level for the prompt to display at.
-        :param prompt: The prompt to display.
-        """
-        self.prompts[level] = prompt
         
 class FileLogger(Logger):
     """
@@ -235,7 +267,7 @@ class FileLogger(Logger):
     
     The default logging severity level is INFO.
     """
-    def __init__(self, name=None, level=INFO, path=None, print_default=True, log_default=False):
+    def __init__(self, name=None, level=INFO, path=None, print_default=True, log_default=True):
         """
         Create the rotating file logger. By default, the name will be set based
         on the inspection stack; the level will be set to INFO; and the path
