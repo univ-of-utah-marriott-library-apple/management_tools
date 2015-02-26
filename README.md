@@ -212,7 +212,7 @@ def stream_logger(level=DEBUG):
 To easily get a logger with the default specifications, the module provides a method for each logger: `FileLogger` has `file_logger()`, and `StreamLogger` has `stream_logger()`. Simply do:
 
 ```
->>> from management_tools.loggers import file_logger
+>>> from management_tools.loggers import stream_logger
 >>> logger = stream_logger()
 >>> logger.info("Time is an illusion. Lunchtime doubly so.")
 2015-02-26 12:11:50,837 INFO: Time is an illusion. Lunchtime doubly so.
@@ -302,6 +302,7 @@ INFO: How would you react if I said that I'm not from Guildford at all, but from
 >>> logger.set_prompt(loggers.INFO, 'Ford: ')
 >>> logger.info("The point is that I am now a perfectly safe penguin, and my colleague here is rapidly running out of limbs!")
 Ford: The point is that I am now a perfectly safe penguin, and my colleague here is rapidly running out of limbs!
+>>>
 ```
 
 ### plist_editor
