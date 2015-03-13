@@ -15,12 +15,9 @@ def get_filesystems(local_only=False):
     
     return filesystems
 
-def get_fs_type(name):
-    pass
-
 def get_raw_fs_info(fs=None):
     # Get a list of all the currently-mounted disks' names.
-    fs_info = subprocess.check_output(['sbin/mount'])
+    fs_info = subprocess.check_output(['/sbin/mount'])
     
     if not fs:
         return fs_info
@@ -37,12 +34,8 @@ def get_raw_fs_info(fs=None):
     else:
         return result[0]
 
-def get_raw_fs_usage(mount_point=None, include_inodes=False, kblocks=True):
-    df = ['/bin/df']
-    if not include_inodes:
-        df.append('-P')
-    if kblocks:
-        df.append('-k')
+def get_raw_fs_usage(mount_point=None):
+    df = ['/bin/df', '-P', '-k']
     if mount_point:
         df.append(mount_point)
     df_info = subprocess.check_output(df)
@@ -56,16 +49,8 @@ def get_raw_fs_usage(mount_point=None, include_inodes=False, kblocks=True):
     df_info = [x for x in df_info if x]
     if len(df_info) > 2:
         raise RuntimeError("Specified mount point '{}' exists on two filesystems.".format(mount_point))
-    headers = df_info[0]
-    info    = df_info[1]
-    
-    #FIXME Parsing this data is a headache. Consider removing options from this method
-    # so that everything will run the same every time. Hmm.
-    
-    
-    # Count up the spacing so we know what's what.
-    space_counts = [(len(list(xpart))) for x, xpart in groupby(headers) if x == ' ']
-    for i in range(len(space_counts)):
+    # We only need the raw form of the numbers and values.
+    return df_info[1]
 
 class Filesystem(object):
     def __init__(self, name):
@@ -80,7 +65,7 @@ class Filesystem(object):
         
         self.update()
     
-    def update():
+    def update(self):
         info = get_raw_fs_info(self.name)
         # 'info' now contains a line like:
         #   /dev/disk1s1 on /Volumes/External (hfs, local, journaled)
@@ -92,12 +77,25 @@ class Filesystem(object):
         properties = properties.split(', ')
         if properties[0].endswith('fs'):
             self.__type = properties[0]
+        self.__properties = properties
         
         info = get_raw_fs_usage(self.mount_point)
         # 'info' now contains a line like:
         #   /dev/disk1s1  100    70    30    70%   /Volumes/External
         #   ------+-----  -+-   -+-   -+-    -+-   --------+--------
         #        name    blocks used avail capacity   mount point
+        info = info.split()
+        index = 0
+        for index in range(len(info)):
+            try:
+                int(info[index])
+                break
+            except ValueError:
+                pass
+        self.__kblocks       = info[index]
+        self.__kblocks_used  = info[index + 1]
+        self.__kblocks_avail = info[index + 2]
+        self.__capacity      = info[index + 3]
     
     @property
     def name(self):
