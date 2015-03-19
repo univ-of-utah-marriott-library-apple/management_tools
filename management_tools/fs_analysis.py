@@ -4,8 +4,11 @@ from itertools import groupby
 def get_filesystems(local_only=False):
     """
     """
-    fs_info = get_raw_fs_info()
+    fs_info = get_raw_fs_info().split('\n')
+    fs_info = [x for x in fs_info if x]
+    print(fs_info)
     filesystem_names = [x.split(' on')[0] for x in fs_info]
+    print(filesystem_names)
     
     filesystems = []
     
@@ -15,7 +18,7 @@ def get_filesystems(local_only=False):
     
     return filesystems
 
-def get_raw_fs_info(fs=None):
+def get_raw_fs_info(fs=None, strict=False):
     # Get a list of all the currently-mounted disks' names.
     fs_info = subprocess.check_output(['/sbin/mount'])
     
@@ -26,7 +29,10 @@ def get_raw_fs_info(fs=None):
     fs_info = fs_info.split('\n')
     fs_info = [x for x in fs_info if x]
     # Check for the filesystem being in the list.
-    result = [x for x in fs_info if fs in x.split(' on')[0]]
+    if strict:
+        result = [x for x in fs_info if fs == x.split(' on')[0]]
+    else:
+        result = [x for x in fs_info if fs in x.split(' on')[0]]
     if len(result) > 1:
         raise RuntimeError("Too many matches for filesystem '{}'.".format(fs))
     elif len(result) == 0:
@@ -66,7 +72,7 @@ class Filesystem(object):
         self.update()
     
     def update(self):
-        info = get_raw_fs_info(self.name)
+        info = get_raw_fs_info(fs=self.name, strict=True)
         # 'info' now contains a line like:
         #   /dev/disk1s1 on /Volumes/External (hfs, local, journaled)
         #   ------+-----    --------+--------  -+-
@@ -96,6 +102,9 @@ class Filesystem(object):
         self.__kblocks_used  = info[index + 1]
         self.__kblocks_avail = info[index + 2]
         self.__capacity      = info[index + 3]
+    
+    def __repr__(self):
+        return super(Filesystem, self).__repr__()
     
     @property
     def name(self):
