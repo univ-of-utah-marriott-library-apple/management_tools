@@ -128,7 +128,7 @@ class Filesystem(object):
         self.__type          = None
         self.__kblocks       = None
         self.__kblocks_used  = None
-        self.__kblocks_avail = None
+        self.__kblocks_free = None
         self.__capacity      = None
         self.__properties    = None
         
@@ -168,14 +168,36 @@ class Filesystem(object):
                 pass
         self.__kblocks       = info[index]
         self.__kblocks_used  = info[index + 1]
-        self.__kblocks_avail = info[index + 2]
-        self.__capacity      = info[index + 3]
+        self.__kblocks_free = info[index + 2]
+        self.__capacity      = info[index + 3][:-1] # remove the "%" off the end
     
     def __repr__(self):
         """
+        :return: the identifier used to create this object
+        """
+        return "{}".format(self.name)
+    
+    def __str__(self):
+        """
         :return: a string representing this object
         """
-        return "{} mounted on {}".format(self.name, self.mount_point)
+        result = (
+            "{name} mounted on {mount_point}, type: {type}\n"
+            "    total kblocks:      {kblocks}\n"
+            "    used kblocks:       {kblocks_used}\n"
+            "    available kblocks:  {kblocks_free}\n"
+            "    remaining capacity: {capacity}\n"
+            "    other properties:   {properties}"
+        ).format(
+            name = self.name, mount_point = self.mount_point, type = self.type,
+            kblocks       = self.kblocks,
+            kblocks_used  = self.kblocks_used,
+            kblocks_free = self.kblocks_free,
+            capacity      = self.capacity,
+            properties    = ', '.join(self.properties)
+        )
+        
+        return result
     
     ########
     # PROPERTIES
@@ -198,19 +220,31 @@ class Filesystem(object):
     
     @property
     def kblocks(self):
-        return self.__kblocks if self.__kblocks else None
+        return int(self.__kblocks) if self.__kblocks else None
     
     @property
     def kblocks_used(self):
-        return self.__kblocks_used if self.__kblocks_used else None
+        return int(self.__kblocks_used) if self.__kblocks_used else None
     
     @property
-    def kblocks_avail(self):
-        return self.__kblocks_avail if self.__kblocks_avail else None
+    def kblocks_free(self):
+        return int(self.__kblocks_free) if self.__kblocks_free else None
+    
+    @property
+    def bytes(self):
+        return 1024 * self.kblocks if self.kblocks else None
+    
+    @property
+    def bytes_used(self):
+        return 1024 * self.kblocks_used if self.kblocks_used else None
+    
+    @property
+    def bytes_free(self):
+        return 1024 * self.kblocks_free if self.kblocks_free else None
     
     @property
     def capacity(self):
-        return self.__capacity if self.__capacity else None
+        return int(self.__capacity) if self.__capacity else None
     
     @property
     def properties(self):
