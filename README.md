@@ -11,6 +11,7 @@ A collection of Python scripts and packages to simplify OS X management.
 * [Uninstall](#uninstall) - removal of Management Tools
 * [Modules](#modules)
   * [app_info](#app_info) - access applications' information
+  * [fs_analysis](#fs_analysis) - analyze mounted filesystems
   * [loggers](#loggers) - output data to logs
   * [plist_editor](#plist_editor) - modify plists properly
 * [Scripts](#scripts)
@@ -19,6 +20,7 @@ A collection of Python scripts and packages to simplify OS X management.
   * [Management Logger](#management-logger) - log data easily
   * [Management Email](#management-email) - simple email sender
   * [Python Package Creator](#python-package-creator) - an automated .pkg creator for Python projects using 'setup.py'
+* [Update History](#update-history) - all of the major updates to Management Tools
 
 ## Download
 
@@ -157,6 +159,46 @@ If you were to put this in your source file (e.g. `.bash_profile`), you can simp
 $ bid safari
 /Applications/Safari.app: com.apple.Safari
 ```
+
+### fs_analysis
+
+Sometimes you might want to get information about mounted filesystems. Command line tools such as `df` and `mount` are useful if you're a human, but they leave something to be desired if you write a lot of scripts. Enter `fs_analysis` - a Python module designed to help you gather information on mounted filesystems.
+
+`fs_analysis` has three methods for polling the system about mounted filesystems:
+1. `get_responsible_fs(target)` finds which filesystem contains the given file or directory. The return value is the name of the filesystem, such as '/dev/disk0s2'.
+2. `get_raw_fs_info(fs_name)` returns the `mount` information for the given filesystem, which will include the mount point and mount options.
+3. `get_raw-fs_usage(mount_point)` gives output from `df -P -k $mount_point` (but without the headers that `df` usually puts on the first line).
+
+#### Filesystem
+
+Additionally (and most importantly), `fs_analysis` introduces a `Filesystem` class. To initialize a `Filesystem` object, you must supply the constructor with the raw device name of the filesystem you want it to keep track of. Sometimes you may not know the device name but you might know a file or folder on the specified device, or even the mount point. Here's how I initialize my `Filesystem` objects:
+
+```python
+from management_tools import fs_analysis
+
+device_name = fs_analysis.get_responsible_fs('/path/to/target')
+fs_object   = fs_analysis.Filesystem(device_name)
+```
+
+Objects of this type keep track of various bits of information regarding a particular filesystem:
+
+| Property Name | Description                                                                                                                 |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------|
+| name          | The raw device name for the filesystem (e.g. `/dev/disk2s1`).                                                               |
+| mount_point   | Where the device is mounted (e.g. `/Volumes/MyFavoriteDisk`).                                                               |
+| type          | What type of filesystem it is (HFS, NTFS, FAT, etc.).                                                                       |
+| kblocks       | Total number of 1024-byte blocks on the device.                                                                             |
+| kblocks_used  | Number of 1024-byte blocks that are used.                                                                                   |
+| kblocks_free  | Number of 1024-byte blocks available for use. (`kblocks_free + kblocks_used = kblocks`)                                     |
+| bytes         | Total number of bytes on the device (computed as `1024 x kblocks`).                                                         |
+| bytes_used    | Number of bytes that are used (computed as `1024 x kblocks_used`).                                                          |
+| bytes_free    | Number of bytes remaining unused (computed as `1024 x kblocks_free`).                                                       |
+| capacity      | The percentage of space that has been used. (This is a rounded integer computed as `kblocks_used / kblocks` by the system.) |
+| properties    | Any other properties the device may have (e.g. HFS, remote, nosuid, journaled, read-only, etc.).                            |
+
+Additionally, the `Filesystem` object's data can be refreshed by using the `update()` method. This will cause the object to re-poll the system and gather new usage data.
+
+Note that the properties are otherwise designed to be immutable, since they are descriptions of filesystems and not values for you to modify directly. I did this to ensure greater safety when using these objects. (What I mean is: you can't do `fs_object.bytes = 100` or something like that.)
 
 ### loggers
 
@@ -441,3 +483,34 @@ $ pypkg.py edu.utah.scl.management-tools ./setup.py --python /usr/bin/python --d
 #### Uninstaller
 
 PyPkg automatically produces another `.pkg` file to *uninstall* whatever package you just produced. You can simply double-click it and it will remove the contents of the previously-installed package, and it will also forget that package from the receipts database. This is significantly easier than the previous method of running an uninstallation script from the terminal. By default this uninstallation package will be produced on the same level as the installation package, so you will be able to decide how to distribute them.
+
+## Update History
+
+This is a reverse-chronological list of updates to this project.
+
+| Date       | Version | Update Description                                                                                                             |
+|------------|:-------:|--------------------------------------------------------------------------------------------------------------------------------|
+| 2015-03-26 | 1.8.1   | Updated `fs_analysis.Filesystem` objects to have `bytes` properties.                                                           |
+| 2015-03-20 | 1.8.0   | Introduced `fs_analysis` - simple filesystem information for Python.                                                           |
+| 2015-02-26 | 1.7.0   | Significant rewrite of the `loggers` module. Provides greater flexibility and more options in the creation of logger objects.  |
+| 2015-02-24 | 1.6.4   | Custom logging prompts.                                                                                                        |
+| 2015-02-19 | 1.6.3   | Now you can get the current installed version of Management Tools by doing `python -m management_tools.__init__`!              |
+| 2015-02-06 | 1.6.2   | Logging level update (it was broken before).                                                                                   |
+| 2015-02-05 | 1.6.1   | Can now set the logging level in `get_logger()` method.                                                                        |
+| 2015-02-05 | 1.6.0   | Massive overhaul of `loggers` system. Now there's a `Logger` class that can be used more easily.                               |
+| 2014-07-15 | 1.5.13  | PyPkg now supporst an "extras" directory option. Useful for readmes and config files for your package deployments.             |
+| 2014-06-26 | 1.5.10  | Signing update. PyPkg supports code developer signatures. Good for deploying.                                                  |
+| 2014-06-26 | 1.5.9   | After building the installation and uninstallation packages, PyPkg now wraps them in a disk image.                             |
+| 2014-06-26 | 1.5.8   | Removed the uninstallation script and now PyPkg produces real uninstallation packages. Much better.                            |
+| 2014-06-25 | 1.5.7   | Adjusted paths that were causing issues.                                                                                       |
+| 2014-06-25 | 1.5.6   | Set custom version numbers for packages made with PyPkg.                                                                       |
+| 2014-06-24 | 1.5.4   | Can now prevent PyPkg from doing post-clean (leaving files in-place to be perused).                                            |
+| 2014-06-24 | 1.5.2   | PyPkg now supports custom installation locations.                                                                              |
+| 2014-06-24 | 1.5.1   | New uninstaller script for PyPkg.                                                                                              |
+| 2014-06-23 | 1.5.0   | Started on the "Python Package Creator" (`pypkg.py`). Much better than the executable bundler from before.                     |
+| 2014-06-16 | 1.4.0   | Added new `management_email.py` script for sending of emails.                                                                  |
+| 2014-06-11 | 1.3.2   | Increased the size of log files to 10MB.                                                                                       |
+| 2014-05-14 | 1.3.1   | `app_info.py` now finds applications' executable files.                                                                        |
+| 2014-05-07 | 1.2.1   | Updated `setup.py` and significant improvements to README documentation.                                                       |
+| 2014-05-02 | 1.2     | Changed project name from "Helpful Tools" to "Management Tools". Probably a good move.                                         |
+| 2014-04-22 | 0.9     | Began the project as a merge of some in-house tools.                                                                           |
