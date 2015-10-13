@@ -2,8 +2,8 @@ import app_info
 import loggers
 import plist_editor
 
-__version__ = '1.8.1'
-__all__     = ['app_info', 'fs_analysis', 'loggers', 'plist_editor']
+__version__ = '1.9.0'
+__all__     = ['app_info', 'fs_analysis', 'loggers', 'plist_editor', 'slack']
 
 # This provides the ability to get the version from the command line.
 # Do something like:

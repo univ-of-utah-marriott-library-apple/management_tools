@@ -14,6 +14,7 @@ A collection of Python scripts and packages to simplify OS X management.
   * [fs_analysis](#fs_analysis) - analyze mounted filesystems
   * [loggers](#loggers) - output data to logs
   * [plist_editor](#plist_editor) - modify plists properly
+  * [slack](#slack) - easily post to your team's [Slack](https://slack.com/) feed
 * [Scripts](#scripts)
   * [App Lookup](#app-lookup) - lookup an application's information
   * [Python Executable Bundler](#python-executable-bundler) - bundle a Python project into a standalone script
@@ -363,6 +364,37 @@ from management_tools.plist_editor import PlistEditor
 plist = PlistEditor('/path/to/file.plist')
 ```
 
+### slack
+
+Lots of teams are using the neat [Slack](https://slack.com/) application for communication. Slack also provides an easy-to-use API for setting up bots, which our team decided to use to report problems in a sort of makeshift dashboard. To make that job even easier, I've added a high-level class for interacting with a Slack Incoming Webhook.
+
+```python
+from management_tools.slack import IncomingWebhooksSender
+```
+
+The `IncomingWebhooksSender` is able to abstract away a lot of the effort of posting to your Slack team. The constructor takes an integration URL (provided when you activate Incoming Webhooks for a given channel) and can additionally take the following arguments:
+
+| Argument      | Purpose                                                                                                                           |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| `bot_name`    | The name for your bot, like "testbot" or "Errors From My Script".                                                                 |
+| `icon_url`    | You can specify a URL to an image that your bot will use as an avatar.                                                            |
+| `icon_emoji`  | You can also use any of the [available Slack emojis](http://www.emoji-cheat-sheet.com/) as an icon. This overrides `icon_url`.    |
+| `channel`     | The default channel for your bot. Any bot can post to any channel, though.                                                        |
+| `markdown`    | Whether your bot supports Markdown formatting. The default is True.                                                               |
+
+And an `IncomingWebhooksSender` object has the following public methods:
+
+| Method                        | Purpose                                                                                           |
+|-------------------------------|---------------------------------------------------------------------------------------------------|
+| `send_message(message)`       | Sends a text message with all default settings.                                                   |
+| `send_message_to_channel(message, channel)`   | Sends a text message to a specific channel with all default settings.             |
+| `success(message?)`           | Sends a check mark and a message (if given).                                                      |
+| `warning(message?)`           | Sends a warning sign with a message (if given).                                                   |
+| `error(message?)`             | Sends a red circle with a message (if given).                                                     |
+| `send_dictionary(dictionary)` | Converts a dictionary to JSON and sends it. This is to get around any restrictions in the object. |
+
+(Where arguments with a `?` are optional.)
+
 ## Scripts
 
 The scripts are mostly just simple frontends for using the modules above. For example: perhaps you want to log something, but you don't want to go through the trouble of importing the logger and setting it up. Instead, just use the Management Logger script and it will do the work for you.
@@ -490,6 +522,7 @@ This is a reverse-chronological list of updates to this project.
 
 | Date       | Version | Update Description                                                                                                             |
 |------------|:-------:|--------------------------------------------------------------------------------------------------------------------------------|
+| 2015-10-13 | 1.9.0   | Added Slack incoming webhooks module. This allows easy bot-posting via the Slack API.                                          |
 | 2015-03-26 | 1.8.1   | Updated `fs_analysis.Filesystem` objects to have `bytes` properties.                                                           |
 | 2015-03-20 | 1.8.0   | Introduced `fs_analysis` - simple filesystem information for Python.                                                           |
 | 2015-02-26 | 1.7.0   | Significant rewrite of the `loggers` module. Provides greater flexibility and more options in the creation of logger objects.  |
