@@ -395,6 +395,20 @@ And an `IncomingWebhooksSender` object has the following public methods:
 
 (Where arguments with a `?` are optional.)
 
+[The Slack API's documentation on incoming webhooks can be found here.](https://api.slack.com/incoming-webhooks)
+
+As an example, say you have the incoming webhook URL `https://hooks.slack.com/services/ABCDE/EDCBA/12345`. To use this with `IncomingWebhooksSender`, do:
+
+```python
+from management_tools.slack import IncomingWebhooksSender as IWS
+url = "https://hooks.slack.com/services/ABCDE/EDCBA/12345"
+bot = IWS(url, bot_name="My Test Bot", channel="#bot-channel")
+bot.send_message("This is a test!")
+bot.send_message_to_channel("Another test...", "#different-channel")
+```
+
+Note that your channel names must start with either `#` for regular channels or `@` for direct messages. You'll get an error if you don't use one of those. However, if you choose to leave the channel blank then your bot will post to the default channel for your incoming webhook URL.
+
 ## Scripts
 
 The scripts are mostly just simple frontends for using the modules above. For example: perhaps you want to log something, but you don't want to go through the trouble of importing the logger and setting it up. Instead, just use the Management Logger script and it will do the work for you.
@@ -522,6 +536,7 @@ This is a reverse-chronological list of updates to this project.
 
 | Date       | Version | Update Description                                                                                                             |
 |------------|:-------:|--------------------------------------------------------------------------------------------------------------------------------|
+| 2016-02-03 | 1.9.1   | Updated Slack module and documentation.                                                                                        |
 | 2015-10-13 | 1.9.0   | Added Slack incoming webhooks module. This allows easy bot-posting via the Slack API.                                          |
 | 2015-03-26 | 1.8.1   | Updated `fs_analysis.Filesystem` objects to have `bytes` properties.                                                           |
 | 2015-03-20 | 1.8.0   | Introduced `fs_analysis` - simple filesystem information for Python.                                                           |

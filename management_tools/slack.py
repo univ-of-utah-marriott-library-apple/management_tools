@@ -77,13 +77,25 @@ class IncomingWebhooksSender(object):
         self.icon_emoji = icon_emoji
         self.channel    = channel
         self.mrkdwn     = markdown
+        # Check if the channel has a '#' or '@' at the beginning. If not,
+        # throw an error.
+        if not self.username and self.username is not None:
+            raise ValueError("Null username specified.")
+        if not self.channel and self.channel is not None:
+            raise ValueError("Null channel specified.")
+        if (channel is not None and not self.channel.startswith('#')
+            and not self.channel.startswith('@')):
+            raise ValueError(
+                "Invalid channel. Need a '#' for channels or '@' for direct " +
+                "messages."
+            )
     ############################################################################
     # Public methods.
     def send_message(self, message):
         """
         Sends a message to the default channel for this webhook (which is
         determined by the URL passed in during object construction).
-        
+
         :param message: Message text you want to send.
         """
         data = {'text': str(message)}
